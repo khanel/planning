@@ -1,0 +1,25 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Android
+.gradle/
+local.properties
+
+# iOS
+.symlinks/
+Pods/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# User-specified ignores
+COMMIT_CONVENTION.md
+git_manifest.md
+PLANNING_APP_DEVELOPMENT_PLAN.md
