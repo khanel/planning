@@ -1,17 +1,24 @@
-
 import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:injectable/injectable.dart';
+import 'package:planning/src/data/models/task_data_model.dart';
+import 'package:planning/src/data/models/unified_record_model.dart';
 
-/// Provides methods to initialize and access Hive boxes for DI.
-class HiveModule {
-  static Future<void> init() async {
-    await Hive.initFlutter();
-    // Register adapters here when models are available
-    // Example: Hive.registerAdapter(MyModelAdapter());
-  }
+@module
+abstract class HiveModule {
+  @preResolve
+  Future<Box<UnifiedRecordModel>> get unifiedRecordBox async {
+    // Register adapters if not already registered
+    if (!Hive.isAdapterRegistered(UnifiedRecordModelAdapter().typeId)) {
+      Hive.registerAdapter(UnifiedRecordModelAdapter());
+    }
+     if (!Hive.isAdapterRegistered(TaskDataModelAdapter().typeId)) {
+      Hive.registerAdapter(TaskDataModelAdapter());
+    }
+     if (!Hive.isAdapterRegistered(TaskImportanceAdapter().typeId)) {
+      Hive.registerAdapter(TaskImportanceAdapter());
+    }
 
-  /// Opens and returns a box with the given [boxName].
-  static Future<Box> openBox(String boxName) async {
-    return await Hive.openBox(boxName);
+
+    return await Hive.openBox<UnifiedRecordModel>('unifiedRecords');
   }
 }
