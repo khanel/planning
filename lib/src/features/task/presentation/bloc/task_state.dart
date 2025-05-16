@@ -33,4 +33,36 @@ class TaskLoadFailure extends TaskState {
   List<Object> get props => [message];
 }
 
-// TODO: Add other task-related states like TaskAddSuccess, TaskUpdateSuccess, TaskDeleteSuccess, etc.
+class TaskSaveInProgress extends TaskState {
+  const TaskSaveInProgress();
+}
+
+class TaskSaveSuccess extends TaskState {
+  const TaskSaveSuccess();
+}
+
+class TaskSaveFailure extends TaskState {
+  final String message;
+
+  const TaskSaveFailure({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
+
+class TaskDeleteInProgress extends TaskState {
+  const TaskDeleteInProgress();
+}
+
+class TaskDeleteSuccess extends TaskState {
+  const TaskDeleteSuccess();
+}
+
+class TaskDeleteFailure extends TaskState {
+  final String message;
+
+  const TaskDeleteFailure({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
