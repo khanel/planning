@@ -22,9 +22,7 @@ class _EisenhowerMatrixScreenState extends State<EisenhowerMatrixScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Eisenhower Matrix'),
-      ),
+      appBar: AppBar(title: const Text('Eisenhower Matrix')),
       body: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           if (state is TaskLoadInProgress) {
@@ -33,112 +31,228 @@ class _EisenhowerMatrixScreenState extends State<EisenhowerMatrixScreen> {
             // Group tasks by Eisenhower category
             final Map<EisenhowerCategory, List<Task>> categorizedTasks = {
               for (var category in EisenhowerCategory.values)
-                category: state.tasks.where((task) => task.eisenhowerCategory == category).toList()
+                category:
+                    (state is TaskLoadSuccess)
+                        ? state.tasks
+                            .where(
+                              (task) => task.eisenhowerCategory == category,
+                            )
+                            .toList()
+                        : [],
             };
 
             // Display the matrix quadrants at the top and tasks at the bottom
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Top row: Urgent & Important (Do) and Not Urgent & Important (Decide)
+                // Importance Axis Label (Above top row)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4.0),
+                  child: Center(
+                    child: Text(
+                      'Importance',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
                 Expanded(
                   flex: 2, // Allocate more space to quadrants
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Urgent & Important (Do)
-                      Expanded(
-                        child: Card(
-                          margin: const EdgeInsets.all(8.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  EisenhowerCategory.doIt.toString().split('.').last,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                // You can add a summary or count of tasks here later
-                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.doIt] ?? [])), // Optional: display tasks within quadrant
-                              ],
-                            ),
+                      // Urgency Axis Label (Left of quadrants)
+                      const RotatedBox(
+                        quarterTurns: -1,
+                        child: Center(
+                          child: Text(
+                            'Urgency',
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-                      // Not Urgent & Important (Decide)
+                      // Quadrants Column
                       Expanded(
-                        child: Card(
-                          margin: const EdgeInsets.all(8.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  EisenhowerCategory.decide.toString().split('.').last,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                // You can add a summary or count of tasks here later
-                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.decide] ?? [])), // Optional: display tasks within quadrant
-                              ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Top row: Urgent & Important (Do) and Not Urgent & Important (Decide)
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Urgent & Not Important (Delegate)
+                                  Expanded(
+                                    child: Card(
+                                      margin: const EdgeInsets.all(8.0),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: Center(
+                                              child: Text(
+                                                EisenhowerCategory.delegate
+                                                    .toString()
+                                                    .split('.')
+                                                    .last,
+                                                style: TextStyle(
+                                                  fontSize: 40,
+                                                  color: Colors.grey
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // You can add a summary or count of tasks here later
+                                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.delegate] ?? [])), // Optional: display tasks within quadrant
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Urgent & Important (Do)
+                                  Expanded(
+                                    child: Card(
+                                      margin: const EdgeInsets.all(8.0),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: Center(
+                                              child: Text(
+                                                EisenhowerCategory.doIt
+                                                    .toString()
+                                                    .split('.')
+                                                    .last,
+                                                style: TextStyle(
+                                                  fontSize: 40,
+                                                  color: Colors.grey
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // You can add a summary or count of tasks here later
+                                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.doIt] ?? [])), // Optional: display tasks within quadrant
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            // Bottom row: Urgent & Not Important (Delegate) and Not Urgent & Not Important (Delete)
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Not Urgent & Not Important (Delete)
+                                  Expanded(
+                                    child: Card(
+                                      margin: const EdgeInsets.all(8.0),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: Center(
+                                              child: Text(
+                                                EisenhowerCategory.delete
+                                                    .toString()
+                                                    .split('.')
+                                                    .last,
+                                                style: TextStyle(
+                                                  fontSize: 40,
+                                                  color: Colors.grey
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // You can add a summary or count of tasks here later
+                                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.delete] ?? [])), // Optional: display tasks within quadrant
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Not Urgent & Important (Decide)
+                                  Expanded(
+                                    child: Card(
+                                      margin: const EdgeInsets.all(8.0),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: Center(
+                                              child: Text(
+                                                EisenhowerCategory.decide
+                                                    .toString()
+                                                    .split('.')
+                                                    .last,
+                                                style: TextStyle(
+                                                  fontSize: 40,
+                                                  color: Colors.grey
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // You can add a summary or count of tasks here later
+                                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.decide] ?? [])), // Optional: display tasks within quadrant
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Bottom row: Urgent & Not Important (Delegate) and Not Urgent & Not Important (Delete)
-                Expanded(
-                   flex: 2, // Allocate more space to quadrants
-                  child: Row(
-                    children: [
-                      // Urgent & Not Important (Delegate)
-                      Expanded(
-                        child: Card(
-                          margin: const EdgeInsets.all(8.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  EisenhowerCategory.delegate.toString().split('.').last,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                // You can add a summary or count of tasks here later
-                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.delegate] ?? [])), // Optional: display tasks within quadrant
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Not Urgent & Not Important (Delete)
-                      Expanded(
-                        child: Card(
-                          margin: const EdgeInsets.all(8.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  EisenhowerCategory.delete.toString().split('.').last,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                // You can add a summary or count of tasks here later
-                                // Expanded(child: TaskListView(tasks: categorizedTasks[EisenhowerCategory.delete] ?? [])), // Optional: display tasks within quadrant
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Not Important Axis Label (Below bottom row)
+
                 // Task list at the bottom
                 Expanded(
                   flex: 3, // Allocate more space to the task list
-                  child: TaskListView(tasks: state.tasks), // Display all tasks here
+                  child: TaskListView(
+                    tasks: (state is TaskLoadSuccess) ? state.tasks : [],
+                  ), // Display all tasks here
                 ),
               ],
             );
@@ -147,12 +261,12 @@ class _EisenhowerMatrixScreenState extends State<EisenhowerMatrixScreen> {
               child: Text('Failed to load tasks: ${state.message}'),
             );
           } else if (state is TaskInitial) {
-             context.read<TaskBloc>().add(const LoadTasks());
-             return const Center(child: CircularProgressIndicator());
+            context.read<TaskBloc>().add(const LoadTasks());
+            return const Center(child: CircularProgressIndicator());
           } else if (state is TaskDeleteSuccess || state is TaskSaveSuccess) {
-             // After save/delete, reload tasks to update the list
-             context.read<TaskBloc>().add(const LoadTasks());
-             return const Center(child: CircularProgressIndicator());
+            // After save/delete, reload tasks to update the list
+            context.read<TaskBloc>().add(const LoadTasks());
+            return const Center(child: CircularProgressIndicator());
           }
           return const Center(child: Text('Something went wrong!'));
         },
