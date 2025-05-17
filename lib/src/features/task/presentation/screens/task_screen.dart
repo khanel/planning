@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart'; // Import go_router
 import 'package:planning/src/features/task/presentation/bloc/task_bloc.dart';
 import 'package:planning/src/features/task/presentation/widgets/task_form_dialog.dart';
 import 'package:planning/src/features/task/presentation/widgets/task_list_view.dart';
@@ -38,6 +39,13 @@ class _TaskScreenState extends State<TaskScreen> {
       appBar: AppBar(
         title: const Text('Tasks'),
         actions: [
+          // Button to navigate to Eisenhower Matrix Screen
+          IconButton(
+            icon: const Icon(Icons.grid_view), // Or another suitable icon
+            onPressed: () {
+              context.go('/eisenhower'); // Navigate using go_router
+            },
+          ),
           BlocBuilder<TaskBloc, TaskState>(
             builder: (context, state) {
               EisenhowerCategory? currentFilter;
