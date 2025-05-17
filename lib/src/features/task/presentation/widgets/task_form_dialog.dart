@@ -56,19 +56,31 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () async {
-                      final picked = await showDatePicker(
+                      final pickedDate = await showDatePicker(
                         context: context,
                         initialDate: dueDate ?? DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)), // Allow selecting past dates for editing
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 10)), // Allow selecting dates far in the future
                       );
-                      if (picked != null) {
-                        setState(() {
-                          dueDate = picked;
-                        });
-                      }
+                      if (pickedDate == null) return;
+
+                      final pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(dueDate ?? DateTime.now()),
+                      );
+                      if (pickedTime == null) return;
+
+                      setState(() {
+                        dueDate = DateTime(
+                          pickedDate.year,
+                          pickedDate.month,
+                          pickedDate.day,
+                          pickedTime.hour,
+                          pickedTime.minute,
+                        );
+                      });
                     },
-                    child: Text(dueDate != null ? '${dueDate!.toLocal()}'.split(' ')[0] : 'Select'),
+                    child: Text(dueDate != null ? '${dueDate!.toLocal()}'.split('.')[0] : 'Select'),
                   ),
                 ],
               ),
