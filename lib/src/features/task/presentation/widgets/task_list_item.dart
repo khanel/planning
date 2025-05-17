@@ -213,6 +213,10 @@ class _TaskListItemState extends State<TaskListItem> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(widget.task.description),
+                Text(
+                  'Category: ${widget.task.eisenhowerCategory.toString().split('.').last}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
                 if (widget.task.dueDate != null && !widget.task.completed)
                   Align(
                     alignment: Alignment.bottomRight,
