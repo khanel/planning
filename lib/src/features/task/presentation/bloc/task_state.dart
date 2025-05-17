@@ -4,7 +4,7 @@ abstract class TaskState extends Equatable {
   const TaskState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class TaskInitial extends TaskState {
@@ -17,11 +17,12 @@ class TaskLoadInProgress extends TaskState {
 
 class TaskLoadSuccess extends TaskState {
   final List<Task> tasks;
+  final EisenhowerCategory? currentFilter;
 
-  const TaskLoadSuccess({required this.tasks});
+  const TaskLoadSuccess({required this.tasks, this.currentFilter});
 
   @override
-  List<Object> get props => [tasks];
+  List<Object?> get props => [tasks, currentFilter];
 }
 
 class TaskLoadFailure extends TaskState {

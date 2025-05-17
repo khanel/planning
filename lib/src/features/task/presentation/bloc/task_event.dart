@@ -4,7 +4,7 @@ abstract class TaskEvent extends Equatable {
   const TaskEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class LoadTasks extends TaskEvent {
@@ -37,4 +37,12 @@ class DeleteTask extends TaskEvent {
   List<Object> get props => [taskId];
 }
 
-// TODO: Add other task-related events like AddTask, UpdateTask, DeleteTask, etc.
+/// Event to filter tasks by Eisenhower category.
+class FilterTasks extends TaskEvent {
+  final EisenhowerCategory? category;
+
+  const FilterTasks(this.category);
+
+  @override
+  List<Object?> get props => [category];
+}
