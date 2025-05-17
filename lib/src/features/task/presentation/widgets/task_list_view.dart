@@ -15,7 +15,10 @@ class TaskListView extends StatelessWidget {
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
-        return TaskListItem(task: task);
+        return TaskListItem(
+          key: ValueKey(task.id), // Add a unique key
+          task: task,
+        );
       },
     );
   }

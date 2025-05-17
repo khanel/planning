@@ -147,27 +147,31 @@ class _TaskListItemState extends State<TaskListItem> {
               );
             },
           );
+        } else if (direction == DismissDirection.startToEnd) {
+          // Swipe right for edit
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return TaskFormDialog(
+                  onSubmit: (updatedTask) {
+                    context.read<TaskBloc>().add(UpdateTask(updatedTask));
+                  },
+                  initialTask: widget.task,
+                );
+              },
+            );
+          });
+          return Future.value(false); // Do not dismiss the item for editing
         }
-        return Future.value(true); // Allow swipe right for edit without confirmation
+        return Future.value(false); // Default to not dismissing
       },
       onDismissed: (direction) {
         if (direction == DismissDirection.endToStart) {
           // Swipe left for delete
           context.read<TaskBloc>().add(DeleteTask(widget.task.id));
-        } else if (direction == DismissDirection.startToEnd) {
-          // Swipe right for edit
-           showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return TaskFormDialog(
-                onSubmit: (updatedTask) {
-                  context.read<TaskBloc>().add(UpdateTask(updatedTask));
-                },
-                initialTask: widget.task,
-              );
-            },
-          );
         }
+        // Edit action is handled in confirmDismiss, so no action needed here for startToEnd
       },
       child: Card(
         elevation: 2.0,
