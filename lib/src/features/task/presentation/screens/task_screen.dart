@@ -15,8 +15,7 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   void initState() {
     super.initState();
-    // Optionally, load tasks when the screen is initialized
-    // context.read<TaskBloc>().add(const LoadTasks());
+    context.read<TaskBloc>().add(const LoadTasks());
   }
 
   Future<void> _showAddTaskDialog(BuildContext context) async {
@@ -49,6 +48,9 @@ class _TaskScreenState extends State<TaskScreen> {
           } else if (state is TaskInitial) {
             context.read<TaskBloc>().add(const LoadTasks());
             return const Center(child: CircularProgressIndicator());
+          } else if (state is TaskDeleteSuccess || state is TaskSaveSuccess) {
+             context.read<TaskBloc>().add(const LoadTasks());
+             return const Center(child: CircularProgressIndicator());
           }
           return const Center(child: Text('Something went wrong!'));
         },
