@@ -110,105 +110,115 @@ class _TaskListItemState extends State<TaskListItem> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2.0,
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(
-              color: _getImportanceColor(widget.task.importance),
-              width: 5.0,
-            ),
-            right: BorderSide(
-              color: _getImportanceColor(widget.task.importance),
-              width: 5.0,
-            ),
-          ),
-        ),
-        child: ListTile(
-          leading: Checkbox(
-            value: widget.task.completed,
-            onChanged: (bool? newValue) {
-              if (newValue != null) {
-                final updatedTask = Task(
-                  id: widget.task.id,
-                  name: widget.task.name,
-                  description: widget.task.description,
-                  completed: newValue,
-                  dueDate: widget.task.dueDate,
-                  importance: widget.task.importance,
-                  createdAt: widget.task.createdAt,
-                  updatedAt: DateTime.now(),
-                );
-                context.read<TaskBloc>().add(UpdateTask(updatedTask));
-              }
-            },
-          ),
-          title: Text(widget.task.name),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(widget.task.description),
-              if (widget.task.dueDate != null && !widget.task.completed)
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Text(
-                    _timeRemaining,
-                    style: Theme.of(context).textTheme.bodySmall,
+    return Dismissible(
+      key: Key(widget.task.id),
+      direction: DismissDirection.horizontal,
+      background: Container(
+        color: Colors.blue, // Edit color
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
+      secondaryBackground: Container(
+        color: Colors.red, // Delete color
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.endToStart) {
+          // Swipe left for delete
+          return await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Confirm Delete'),
+                content: Text('Are you sure you want to delete "${widget.task.name}"?'),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false), // Dismiss and return false
+                    child: const Text('Cancel'),
                   ),
-                ),
-            ],
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true), // Dismiss and return true
+                    child: const Text('Delete'),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+        return Future.value(true); // Allow swipe right for edit without confirmation
+      },
+      onDismissed: (direction) {
+        if (direction == DismissDirection.endToStart) {
+          // Swipe left for delete
+          context.read<TaskBloc>().add(DeleteTask(widget.task.id));
+        } else if (direction == DismissDirection.startToEnd) {
+          // Swipe right for edit
+           showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return TaskFormDialog(
+                onSubmit: (updatedTask) {
+                  context.read<TaskBloc>().add(UpdateTask(updatedTask));
+                },
+                initialTask: widget.task,
+              );
+            },
+          );
+        }
+      },
+      child: Card(
+        elevation: 2.0,
+        margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: _getImportanceColor(widget.task.importance),
+                width: 5.0,
+              ),
+              right: BorderSide(
+                color: _getImportanceColor(widget.task.importance),
+                width: 5.0,
+              ),
+            ),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return TaskFormDialog(
-                        onSubmit: (updatedTask) {
-                          context.read<TaskBloc>().add(UpdateTask(updatedTask));
-                        },
-                        initialTask: widget.task,
-                      );
-                    },
+          child: ListTile(
+            leading: Checkbox(
+              value: widget.task.completed,
+              onChanged: (bool? newValue) {
+                if (newValue != null) {
+                  final updatedTask = Task(
+                    id: widget.task.id,
+                    name: widget.task.name,
+                    description: widget.task.description,
+                    completed: newValue,
+                    dueDate: widget.task.dueDate,
+                    importance: widget.task.importance,
+                    createdAt: widget.task.createdAt,
+                    updatedAt: DateTime.now(),
                   );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: const Text('Confirm Delete'),
-                        content: Text('Are you sure you want to delete "${widget.task.name}"?'),
-                        actions: <Widget>[
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop(); // Dismiss the dialog
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              context.read<TaskBloc>().add(DeleteTask(widget.task.id));
-                              Navigator.of(context).pop(); // Dismiss the dialog
-                            },
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
+                  context.read<TaskBloc>().add(UpdateTask(updatedTask));
+                }
+              },
+            ),
+            title: Text(widget.task.name),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.task.description),
+                if (widget.task.dueDate != null && !widget.task.completed)
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Text(
+                      _timeRemaining,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
