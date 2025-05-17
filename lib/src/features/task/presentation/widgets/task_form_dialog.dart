@@ -4,7 +4,9 @@ import 'package:planning/src/data/models/task_data_model.dart';
 
 class TaskFormDialog extends StatefulWidget {
   final void Function(Task) onSubmit;
-  const TaskFormDialog({super.key, required this.onSubmit});
+  final Task? initialTask;
+
+  const TaskFormDialog({super.key, required this.onSubmit, this.initialTask});
 
   @override
   State<TaskFormDialog> createState() => _TaskFormDialogState();
@@ -12,15 +14,24 @@ class TaskFormDialog extends StatefulWidget {
 
 class _TaskFormDialogState extends State<TaskFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  String name = '';
-  String description = '';
-  DateTime? dueDate = DateTime.now().add(const Duration(days: 1));
-  TaskImportance importance = TaskImportance.medium;
+  late String name;
+  late String description;
+  late DateTime? dueDate;
+  late TaskImportance importance;
+
+  @override
+  void initState() {
+    super.initState();
+    name = widget.initialTask?.name ?? '';
+    description = widget.initialTask?.description ?? '';
+    dueDate = widget.initialTask?.dueDate ?? DateTime.now().add(const Duration(days: 1));
+    importance = widget.initialTask?.importance ?? TaskImportance.medium;
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Task'),
+      title: Text(widget.initialTask == null ? 'Add Task' : 'Edit Task'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -28,11 +39,13 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
+                initialValue: name,
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (value) => value == null || value.isEmpty ? 'Enter a name' : null,
                 onSaved: (value) => name = value ?? '',
               ),
               TextFormField(
+                initialValue: description,
                 decoration: const InputDecoration(labelText: 'Description'),
                 onSaved: (value) => description = value ?? '',
               ),
@@ -85,21 +98,21 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
           onPressed: () {
             if (_formKey.currentState?.validate() ?? false) {
               _formKey.currentState?.save();
-              final newTask = Task(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
+              final taskToSubmit = Task(
+                id: widget.initialTask?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
                 name: name,
                 description: description,
-                completed: false,
+                completed: widget.initialTask?.completed ?? false,
                 dueDate: dueDate ?? DateTime.now().add(const Duration(days: 1)),
                 importance: importance,
-                createdAt: DateTime.now(),
+                createdAt: widget.initialTask?.createdAt ?? DateTime.now(),
                 updatedAt: DateTime.now(),
               );
-              widget.onSubmit(newTask);
+              widget.onSubmit(taskToSubmit);
               Navigator.of(context).pop();
             }
           },
-          child: const Text('Add'),
+          child: Text(widget.initialTask == null ? 'Add' : 'Save'),
         ),
       ],
     );
