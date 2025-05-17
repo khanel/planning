@@ -18,6 +18,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<AddTask>(_onAddTask);
     on<UpdateTask>(_onUpdateTask);
     on<DeleteTask>(_onDeleteTask);
+    on<FilterTasks>(_onFilterTasks);
   }
 
   Future<void> _onLoadTasks(
@@ -29,7 +30,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     result.fold(
       (failure) => emit(TaskLoadFailure(message: failure.toString())),
-      (tasks) => emit(TaskLoadSuccess(tasks: tasks)),
+      (tasks) => emit(TaskLoadSuccess(tasks: tasks, currentFilter: null)),
     );
   }
 
@@ -69,5 +70,21 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       (failure) => emit(TaskDeleteFailure(message: failure.toString())),
       (_) => emit(const TaskDeleteSuccess()),
     );
+  }
+
+  Future<void> _onFilterTasks(
+    FilterTasks event,
+    Emitter<TaskState> emit,
+  ) async {
+    if (state is TaskLoadSuccess) {
+      final currentState = state as TaskLoadSuccess;
+      final filteredTasks = event.category == null
+          ? currentState.tasks // Show all tasks if filter is null
+          : currentState.tasks
+              .where((task) => task.eisenhowerCategory == event.category)
+              .toList();
+
+      emit(TaskLoadSuccess(tasks: filteredTasks, currentFilter: event.category));
+    }
   }
 }
