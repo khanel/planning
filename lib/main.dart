@@ -1,4 +1,5 @@
 import 'package:planning/src/features/task/presentation/screens/task_screen.dart';
+import 'package:planning/src/features/task/presentation/screens/eisenhower_matrix_screen.dart'; // Import EisenhowerMatrixScreen
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:planning/src/features/task/presentation/bloc/task_bloc.dart' as task_bloc;
 import 'package:planning/src/features/task/domain/usecases/get_tasks.dart';
@@ -9,6 +10,7 @@ import 'package:planning/src/features/task/data/repositories/task_repository_imp
 import 'package:planning/src/features/task/data/datasources/task_local_data_source_impl.dart';
 import 'package:planning/src/data/models/unified_record_model.dart';
 import 'package:hive/hive.dart';
+import 'package:go_router/go_router.dart'; // Import go_router
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -37,19 +39,32 @@ Future<void> main() async {
     ),
   );
 }
+
+// Configure GoRouter
+final _router = GoRouter(
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const TaskScreen(),
+    ),
+    GoRoute(
+      path: '/eisenhower',
+      builder: (context, state) => const EisenhowerMatrixScreen(),
+    ),
+  ],
+);
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router( // Use MaterialApp.router
       title: 'Planning App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const TaskScreen(),
+      routerConfig: _router, // Provide the router configuration
     );
   }
 }
-
-
