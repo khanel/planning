@@ -93,91 +93,124 @@ class _TaskListItemState extends State<TaskListItem> {
     }
   }
 
+  Color _getImportanceColor(TaskImportance importance) {
+    switch (importance) {
+      case TaskImportance.veryLow:
+        return Colors.grey;
+      case TaskImportance.low:
+        return Colors.blueGrey;
+      case TaskImportance.medium:
+        return Colors.orange;
+      case TaskImportance.high:
+        return Colors.deepOrange;
+      case TaskImportance.veryHigh:
+        return Colors.red;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Checkbox(
-        value: widget.task.completed,
-        onChanged: (bool? newValue) {
-          if (newValue != null) {
-            final updatedTask = Task(
-              id: widget.task.id,
-              name: widget.task.name,
-              description: widget.task.description,
-              completed: newValue,
-              dueDate: widget.task.dueDate,
-              importance: widget.task.importance,
-              createdAt: widget.task.createdAt,
-              updatedAt: DateTime.now(),
-            );
-            context.read<TaskBloc>().add(UpdateTask(updatedTask));
-          }
-        },
-      ),
-      title: Text(widget.task.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.task.description),
-          if (widget.task.dueDate != null && !widget.task.completed)
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Text(
-                _timeRemaining,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+    return Card(
+      elevation: 2.0,
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: _getImportanceColor(widget.task.importance),
+              width: 5.0,
             ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return TaskFormDialog(
-                    onSubmit: (updatedTask) {
-                      context.read<TaskBloc>().add(UpdateTask(updatedTask));
+            right: BorderSide(
+              color: _getImportanceColor(widget.task.importance),
+              width: 5.0,
+            ),
+          ),
+        ),
+        child: ListTile(
+          leading: Checkbox(
+            value: widget.task.completed,
+            onChanged: (bool? newValue) {
+              if (newValue != null) {
+                final updatedTask = Task(
+                  id: widget.task.id,
+                  name: widget.task.name,
+                  description: widget.task.description,
+                  completed: newValue,
+                  dueDate: widget.task.dueDate,
+                  importance: widget.task.importance,
+                  createdAt: widget.task.createdAt,
+                  updatedAt: DateTime.now(),
+                );
+                context.read<TaskBloc>().add(UpdateTask(updatedTask));
+              }
+            },
+          ),
+          title: Text(widget.task.name),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.task.description),
+              if (widget.task.dueDate != null && !widget.task.completed)
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Text(
+                    _timeRemaining,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return TaskFormDialog(
+                        onSubmit: (updatedTask) {
+                          context.read<TaskBloc>().add(UpdateTask(updatedTask));
+                        },
+                        initialTask: widget.task,
+                      );
                     },
-                    initialTask: widget.task,
                   );
                 },
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text('Confirm Delete'),
-                    content: Text('Are you sure you want to delete "${widget.task.name}"?'),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Dismiss the dialog
-                        },
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          context.read<TaskBloc>().add(DeleteTask(widget.task.id));
-                          Navigator.of(context).pop(); // Dismiss the dialog
-                        },
-                        child: const Text('Delete'),
-                      ),
-                    ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Confirm Delete'),
+                        content: Text('Are you sure you want to delete "${widget.task.name}"?'),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Dismiss the dialog
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              context.read<TaskBloc>().add(DeleteTask(widget.task.id));
+                              Navigator.of(context).pop(); // Dismiss the dialog
+                            },
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
-              );
-            },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
