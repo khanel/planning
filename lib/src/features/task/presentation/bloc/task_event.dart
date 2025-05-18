@@ -36,13 +36,3 @@ class DeleteTask extends TaskEvent {
   @override
   List<Object> get props => [taskId];
 }
-
-/// Event to filter tasks by Eisenhower category.
-class FilterTasks extends TaskEvent {
-  final EisenhowerCategory? category;
-
-  const FilterTasks(this.category);
-
-  @override
-  List<Object?> get props => [category];
-}
