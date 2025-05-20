@@ -13,7 +13,7 @@ class LoadPrioritizedTasks extends PrioritizationEvent {
 
 /// Event to filter tasks by Eisenhower category.
 class FilterTasks extends PrioritizationEvent {
-  final EisenhowerCategory? category;
+  final eisenhower.EisenhowerCategory? category;
 
   const FilterTasks(this.category);
 

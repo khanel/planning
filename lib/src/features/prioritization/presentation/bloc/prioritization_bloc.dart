@@ -1,8 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:planning/src/features/task/domain/entities/task.dart'; // Import Task entity and EisenhowerCategory
-import 'package:planning/src/features/task/domain/usecases/get_tasks.dart'; // Import GetTasks use case
-import 'package:planning/src/core/utils/logger.dart'; // Ensure this import is present and used
+import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart' as eisenhower;
+import 'package:planning/src/features/task/domain/entities/task.dart';
+import 'package:planning/src/features/task/domain/usecases/get_tasks.dart';
+import 'package:planning/src/core/utils/logger.dart';
 
 part 'prioritization_event.dart';
 part 'prioritization_state.dart';

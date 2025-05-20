@@ -17,7 +17,7 @@ class PrioritizationLoadInProgress extends PrioritizationState {
 
 class PrioritizationLoadSuccess extends PrioritizationState {
   final List<Task> tasks;
-  final EisenhowerCategory? currentFilter; // Keep track of the active filter
+  final eisenhower.EisenhowerCategory? currentFilter; // Keep track of the active filter
 
   const PrioritizationLoadSuccess({required this.tasks, this.currentFilter});
 
