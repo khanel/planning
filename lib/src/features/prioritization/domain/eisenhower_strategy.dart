@@ -5,7 +5,7 @@ import 'package:planning/src/core/utils/logger.dart';
 
 // final log = getLogger('EisenhowerStrategy'); // Corrected: Use the global log instance from logger.dart
 
-class EisenhowerStrategy implements PrioritizationStrategy {
+class EisenhowerStrategy implements PrioritizationStrategy<EisenhowerCategory> {
   @override
   String get name => 'Eisenhower Matrix';
 
@@ -27,12 +27,12 @@ class EisenhowerStrategy implements PrioritizationStrategy {
   }
 
   @override
-  String getDescription(EisenhowerCategory category) {
-    return category.description;
+  String getDescription(EisenhowerCategory priority) {
+    return priority.description;
   }
 
   @override
-  Color getColor(EisenhowerCategory category) {
-    return category.color;
+  Color getColor(EisenhowerCategory priority) {
+    return priority.color;
   }
 }
