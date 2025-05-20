@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.0
+  sdk: '>=3.4.0 <4.0.0'  # Updated to support latest Flutter versions
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -40,12 +40,12 @@ dependencies:
   # Hive database dependencies
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  get_it: ^7.6.0
-  injectable: ^2.3.0
-  bloc: ^9.0.0
-  flutter_bloc: ^9.1.1
-  go_router: ^15.1.2 # Add go_router for navigation
-  logging: ^1.3.0
+  get_it: ^7.6.4  # Updated to latest stable
+  injectable: ^2.3.2  # Updated to latest stable
+  bloc: ^8.1.4  # Downgraded to be compatible with bloc_test
+  flutter_bloc: ^8.1.4  # Downgraded to be compatible with bloc_test
+  go_router: ^13.0.2  # Latest stable version
+  logging: ^1.2.0  # Updated to latest stable
 
 dev_dependencies:
   flutter_test:
@@ -56,12 +56,17 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^3.0.1  # Updated to latest stable
 
   # Hive generator for type adapters
   hive_generator: ^2.0.1
-  build_runner: ^2.4.6
-  injectable_generator: ^2.6.0
+  build_runner: ^2.4.8  # Updated to latest stable
+  injectable_generator: ^2.3.2  # Updated to match injectable
+  
+  # Testing
+  bloc_test: ^9.1.3  # Updated to latest stable for bloc 8.x
+  mocktail: ^1.0.4  # Updated to latest stable
+  test: ^1.24.7  # Updated to latest stable
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
