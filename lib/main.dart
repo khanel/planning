@@ -11,12 +11,16 @@ import 'package:planning/src/features/task/data/datasources/task_local_data_sour
 import 'package:planning/src/data/models/unified_record_model.dart';
 import 'package:hive/hive.dart';
 import 'package:go_router/go_router.dart';
+import 'package:planning/src/core/utils/logger.dart';
+import 'package:logging/logging.dart'; // Add this import for Level enum
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  setupLogger(level: Level.ALL); // Explicitly set level to ALL
+  log.warning('!!!!!!!!!! LOGGER INITIALIZED IN MAIN.DART !!!!!!!!!!'); // Test log message
   await Hive.initFlutter();
   if (!Hive.isAdapterRegistered(0)) {
     Hive.registerAdapter(UnifiedRecordModelAdapter());
