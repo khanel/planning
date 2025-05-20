@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:planning/src/data/models/unified_record_model.dart';
+import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart' as eisenhower;
 
 part 'task_data_model.g.dart';
 
@@ -19,6 +20,8 @@ enum TaskImportance {
 
 @HiveType(typeId: 2)
 class TaskDataModel extends UnifiedRecordModel {
+  @HiveField(10)
+  final eisenhower.EisenhowerCategory? priority;
   @HiveField(5) // Start HiveField index after UnifiedRecordModel fields
   final String name;
 
@@ -43,6 +46,7 @@ class TaskDataModel extends UnifiedRecordModel {
     this.dueDate,
     this.completed = false,
     this.importance = TaskImportance.medium,
+    this.priority,
   }) : super(
           id: id,
           type: 'task',
@@ -62,6 +66,7 @@ class TaskDataModel extends UnifiedRecordModel {
       dueDate: map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null,
       completed: map['completed'] as bool,
       importance: TaskImportance.values[map['importance'] as int],
+      priority: map['priority'] != null ? eisenhower.EisenhowerCategory.values[map['priority'] as int] : null,
     );
   }
 
@@ -76,6 +81,7 @@ class TaskDataModel extends UnifiedRecordModel {
       'dueDate': dueDate?.toIso8601String(),
       'completed': completed,
       'importance': importance.index,
+      'priority': priority?.index,
     };
   }
 }
