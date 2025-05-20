@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart' as eisenhower;
 import 'package:planning/src/features/task/domain/entities/task.dart';
 import 'package:planning/src/core/utils/logger.dart';
 
@@ -7,13 +8,19 @@ class PrioritizedTaskListWidget extends StatelessWidget {
 
   const PrioritizedTaskListWidget({Key? key, required this.tasks})
     : super(key: key);
+    
+  /// Filter to get only truly unprioritized tasks
+  List<Task> get unprioritizedTasks => tasks.where((task) => 
+      task.priority == eisenhower.EisenhowerCategory.unprioritized
+  ).toList();
 
   @override
   Widget build(BuildContext context) {
-    log.fine('PrioritizedTaskListWidget: build called with ${tasks.length} tasks.');
-    if (tasks.isEmpty) {
-      log.info('PrioritizedTaskListWidget: No tasks to display.');
-      return const Center(child: Text('No task to display.'));
+    final filteredTasks = unprioritizedTasks;
+    log.fine('PrioritizedTaskListWidget: build called with ${tasks.length} total tasks, ${filteredTasks.length} unprioritized tasks.');
+    if (filteredTasks.isEmpty) {
+      log.info('PrioritizedTaskListWidget: No unprioritized tasks to display.');
+      return const Center(child: Text('No unprioritized tasks to display.'));
     }
 
     return Padding(
@@ -29,14 +36,30 @@ class PrioritizedTaskListWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                'Tasks',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Unprioritized Tasks',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${filteredTasks.length}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ),
-            ...tasks
+            ...filteredTasks
                 .map((task) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: ConstrainedBox(
