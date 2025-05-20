@@ -39,49 +39,108 @@ class PrioritizedTaskListWidget extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 400),
-                        child: Card(
-                          elevation: 2.0,
-                          margin: EdgeInsets.zero,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
+                        child: LongPressDraggable<Task>(
+                          data: task,
+                          feedback: Material(
+                            color: Colors.transparent,
+                            child: Card(
+                              elevation: 6.0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Text(
                                   task.name,
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
-                                if (task.description.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text(
-                                      task.description,
-                                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                              ),
+                            ),
+                          ),
+                          childWhenDragging: Opacity(
+                            opacity: 0.5,
+                            child: Card(
+                              elevation: 2.0,
+                              margin: EdgeInsets.zero,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      task.name,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                     ),
+                                    if (task.description.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text(
+                                          task.description,
+                                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                        ),
+                                      ),
+                                    if (task.dueDate != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text(
+                                          'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}',
+                                          style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                        ),
+                                      ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        'Importance: ${task.importance.toString().split('.').last}',
+                                        style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          child: Card(
+                            elevation: 2.0,
+                            margin: EdgeInsets.zero,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    task.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                   ),
-                                if (task.dueDate != null)
+                                  if (task.description.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        task.description,
+                                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                      ),
+                                    ),
+                                  if (task.dueDate != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}',
+                                        style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                      ),
+                                    ),
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
-                                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}',
+                                      'Importance: ${task.importance.toString().split('.').last}',
                                       style: const TextStyle(fontSize: 13, color: Colors.black54),
                                     ),
                                   ),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(
-                                    'Importance: ${task.importance.toString().split('.').last}',
-                                    style: const TextStyle(fontSize: 13, color: Colors.black54),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ))
-                .toList(),
+                ,
           ],
         ),
       ),
