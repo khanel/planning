@@ -4,6 +4,7 @@ import 'package:planning/src/features/task/domain/entities/task.dart'; // Keep T
 import 'package:planning/src/features/prioritization/presentation/bloc/prioritization_bloc.dart'; // Import PrioritizationBloc
 import 'package:planning/src/features/prioritization/presentation/widgets/eisenhower_quadrants_widget.dart';
 import 'package:planning/src/features/prioritization/presentation/widgets/prioritized_task_list_widget.dart';
+import 'package:planning/src/core/utils/logger.dart';
 
 class EisenhowerMatrixScreen extends StatefulWidget {
   const EisenhowerMatrixScreen({super.key});
@@ -16,29 +17,37 @@ class _EisenhowerMatrixScreenState extends State<EisenhowerMatrixScreen> {
   @override
   void initState() {
     super.initState();
-    // Load prioritized tasks when the screen initializes
+    log.info(
+        'EisenhowerMatrixScreen: initState - dispatching LoadPrioritizedTasks');
     context.read<PrioritizationBloc>().add(const LoadPrioritizedTasks());
   }
 
   @override
   Widget build(BuildContext context) {
+    log.fine(
+        'EisenhowerMatrixScreen: build called. Current state: ${context.watch<PrioritizationBloc>().state.runtimeType}');
     return Scaffold(
       appBar: AppBar(title: const Text('Eisenhower Matrix')),
       body: BlocBuilder<PrioritizationBloc, PrioritizationState>(
         builder: (context, state) {
+          log.fine(
+              'EisenhowerMatrixScreen: BlocBuilder building with state: ${state.runtimeType}');
           if (state is PrioritizationLoadInProgress) {
+            log.info(
+                'EisenhowerMatrixScreen: Displaying CircularProgressIndicator for PrioritizationLoadInProgress');
             return const Center(child: CircularProgressIndicator());
           } else if (state is PrioritizationLoadSuccess) {
-            // Updated state check
+            log.info(
+                'EisenhowerMatrixScreen: Displaying content for PrioritizationLoadSuccess with ${state.tasks.length} tasks');
             // Group tasks by Eisenhower category
             final Map<EisenhowerCategory, List<Task>> categorizedTasks = {
               for (var category in EisenhowerCategory.values)
                 category:
-                    state
-                        .tasks // Use tasks from PrioritizationLoadSuccess state
+                    state.tasks
                         .where((task) => task.eisenhowerCategory == category)
                         .toList(),
             };
+            log.fine('EisenhowerMatrixScreen: Tasks categorized for display');
 
             // Display the matrix quadrants at the top and tasks at the bottom
             return Column(
@@ -56,26 +65,27 @@ class _EisenhowerMatrixScreenState extends State<EisenhowerMatrixScreen> {
                 Expanded(
                   flex: 3, // Allocate more space to the task list
                   child: PrioritizedTaskListWidget(
-                    tasks:
-                        state
-                            .tasks, // Use tasks from PrioritizationLoadSuccess state
+                    tasks: state.tasks, // Use tasks from PrioritizationLoadSuccess state
                   ), // Display all tasks here
                 ),
               ],
             );
           } else if (state is PrioritizationLoadFailure) {
-            // Updated state check
+            log.warning(
+                'EisenhowerMatrixScreen: Displaying error for PrioritizationLoadFailure - ${state.message}');
             return Center(
               child: Text('Failed to load tasks: ${state.message}'),
             );
           } else if (state is PrioritizationInitial) {
-            // Updated state check
+            log.info(
+                'EisenhowerMatrixScreen: State is PrioritizationInitial, dispatching LoadPrioritizedTasks again.');
             context.read<PrioritizationBloc>().add(
-              const LoadPrioritizedTasks(),
-            ); // Updated bloc and event
+                  const LoadPrioritizedTasks(),
+                );
             return const Center(child: CircularProgressIndicator());
           }
-          // Removed the TaskDeleteSuccess || TaskSaveSuccess branch
+          log.severe(
+              'EisenhowerMatrixScreen: Reached unexpected state in BlocBuilder: ${state.runtimeType}');
           return const Center(child: Text('Something went wrong!'));
         },
       ),

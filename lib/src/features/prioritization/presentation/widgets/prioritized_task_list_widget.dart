@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:planning/src/features/task/domain/entities/task.dart';
-
+import 'package:planning/src/core/utils/logger.dart';
 
 class PrioritizedTaskListWidget extends StatelessWidget {
   final List<Task> tasks;
@@ -10,7 +10,9 @@ class PrioritizedTaskListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    log.fine('PrioritizedTaskListWidget: build called with ${tasks.length} tasks.');
     if (tasks.isEmpty) {
+      log.info('PrioritizedTaskListWidget: No tasks to display.');
       return const Center(child: Text('No task to display.'));
     }
 
@@ -41,6 +43,12 @@ class PrioritizedTaskListWidget extends StatelessWidget {
                         constraints: const BoxConstraints(maxWidth: 400),
                         child: LongPressDraggable<Task>(
                           data: task,
+                          onDragStarted: () {
+                            log.fine('PrioritizedTaskListWidget: Drag started for task: ${task.name}');
+                          },
+                          onDragEnd: (details) {
+                            log.fine('PrioritizedTaskListWidget: Drag ended for task: ${task.name}. Accepted: ${details.wasAccepted}');
+                          },
                           feedback: Material(
                             color: Colors.transparent,
                             child: Card(

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:planning/src/features/prioritization/domain/prioritization_strategy.dart';
 import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart';
+import 'package:planning/src/core/utils/logger.dart';
+
+// final log = getLogger('EisenhowerStrategy'); // Corrected: Use the global log instance from logger.dart
 
 class EisenhowerStrategy implements PrioritizationStrategy {
   @override
@@ -11,6 +14,7 @@ class EisenhowerStrategy implements PrioritizationStrategy {
     required bool isImportant,
     required bool isUrgent,
   }) {
+    log.fine('Calculating priority (Important: $isImportant, Urgent: $isUrgent)');
     if (isImportant && isUrgent) {
       return EisenhowerCategory.doNow;
     } else if (isImportant && !isUrgent) {
