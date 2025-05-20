@@ -7,6 +7,16 @@ abstract class TaskEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class ChangeTaskPriority extends TaskEvent {
+  final Task task;
+  final EisenhowerCategory newPriority;
+
+  const ChangeTaskPriority({required this.task, required this.newPriority});
+
+  @override
+  List<Object?> get props => [task, newPriority];
+}
+
 class LoadTasks extends TaskEvent {
   const LoadTasks();
 }
