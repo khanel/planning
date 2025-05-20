@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:planning/src/features/task/domain/entities/task.dart';
-import 'package:planning/src/features/task/presentation/widgets/task_list_view.dart';
+
 
 class PrioritizedTaskListWidget extends StatelessWidget {
   final List<Task> tasks;
@@ -10,6 +10,81 @@ class PrioritizedTaskListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaskListView(tasks: tasks);
+    if (tasks.isEmpty) {
+      return const Center(child: Text('No task to display.'));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0), // Outer space from other elements
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(color: Colors.grey.shade300, width: 1.0),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Tasks',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+            ...tasks
+                .map((task) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: Card(
+                          elevation: 2.0,
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  task.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                if (task.description.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      task.description,
+                                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                    ),
+                                  ),
+                                if (task.dueDate != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}',
+                                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                    ),
+                                  ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    'Importance: ${task.importance.toString().split('.').last}',
+                                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ],
+        ),
+      ),
+    );
   }
 }
