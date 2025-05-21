@@ -23,3 +23,6 @@ DerivedData/
 COMMIT_CONVENTION.md
 git_manifest.md
 PLANNING_APP_DEVELOPMENT_PLAN.md
+eisenhower.md
+devtools_options.yaml
+.vscode/launch.json
