@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:planning/src/features/task/domain/entities/task.dart';
 import 'package:planning/src/features/task/presentation/bloc/task_bloc.dart';
 import 'dart:async'; // Import for Timer
-import 'package:planning/src/data/models/task_data_model.dart'; // Required for TaskImportance
+import 'package:planning/src/features/task/data/models/task_data_model.dart'; // Required for TaskImportance
 import 'package:planning/src/features/task/presentation/widgets/task_form_dialog.dart';
 
 class TaskListItem extends StatefulWidget {

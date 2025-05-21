@@ -1,7 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:planning/src/core/errors/exceptions.dart';
-import 'package:planning/src/data/models/task_data_model.dart';
-import 'package:planning/src/data/models/unified_record_model.dart';
+import 'package:planning/src/features/task/data/models/unified_record_model.dart';
 import 'package:planning/src/features/task/data/datasources/task_local_data_source.dart';
 
 class TaskLocalDataSourceImpl implements TaskLocalDataSource {

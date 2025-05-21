@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:planning/src/data/models/unified_record_model.dart';
+import 'package:planning/src/features/task/data/models/unified_record_model.dart';
 import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart' as eisenhower;
 
 part 'task_data_model.g.dart';

@@ -1,4 +1,4 @@
-import 'package:planning/src/data/models/unified_record_model.dart';
+import 'package:planning/src/features/task/data/models/unified_record_model.dart';
 
 abstract class TaskLocalDataSource {
   Future<List<UnifiedRecordModel>> getTasks();

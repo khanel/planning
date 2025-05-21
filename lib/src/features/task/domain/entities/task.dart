@@ -1,19 +1,20 @@
 import 'package:equatable/equatable.dart';
-import 'package:planning/src/data/models/task_data_model.dart';
+import 'package:planning/src/features/task/data/models/task_data_model.dart';
 import 'package:planning/src/features/prioritization/domain/priority.dart';
-import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart' as eisenhower;
+import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart'
+    as eisenhower;
 import 'package:planning/src/features/prioritization/domain/eisenhower_strategy.dart';
 
 class Task extends Equatable {
   final String id;
-  final String name;
-  final String description;
-  final DateTime? dueDate;
-  final bool completed;
-  final TaskImportance importance;
+  String name;
+  String description;
+  DateTime? dueDate;
+  bool completed;
+  TaskImportance importance;
   final DateTime createdAt;
-  final DateTime updatedAt;
-  final Priority priority; // User-assigned priority, default=unprioritized
+  DateTime updatedAt;
+  Priority priority; // User-assigned priority, default=unprioritized
 
   Task({
     required this.id,
@@ -38,7 +39,7 @@ class Task extends Equatable {
     final taskDueDate = DateTime(dueDate!.year, dueDate!.month, dueDate!.day);
     return taskDueDate.isBefore(today) || taskDueDate.isAtSameMomentAs(today);
   }
-  
+
   /// Creates a copy of this task with the given fields replaced with the new values.
   Task copyWith({
     String? id,

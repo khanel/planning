@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:planning/src/features/task/domain/entities/task.dart';
-import 'package:planning/src/data/models/task_data_model.dart';
+import 'package:planning/src/features/task/data/models/task_data_model.dart';
 
 class TaskFormDialog extends StatefulWidget {
   final void Function(Task) onSubmit;

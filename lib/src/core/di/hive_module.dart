@@ -1,7 +1,7 @@
 import 'package:hive/hive.dart';
 import 'package:injectable/injectable.dart';
-import 'package:planning/src/data/models/task_data_model.dart';
-import 'package:planning/src/data/models/unified_record_model.dart';
+import 'package:planning/src/features/task/data/models/task_data_model.dart';
+import 'package:planning/src/features/task/data/models/unified_record_model.dart';
 
 @module
 abstract class HiveModule {
