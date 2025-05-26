@@ -1,20 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:planning/src/features/prioritization/domain/prioritization_strategy.dart';
-import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart';
-import 'package:planning/src/core/utils/logger.dart';
+import 'eisenhower_category.dart';
 
-// final log = getLogger('EisenhowerStrategy'); // Corrected: Use the global log instance from logger.dart
-
-class EisenhowerStrategy implements PrioritizationStrategy<EisenhowerCategory> {
-  @override
-  String get name => 'Eisenhower Matrix';
-
-  @override
+/// Strategy class that implements the Eisenhower Matrix prioritization logic
+class EisenhowerStrategy {
+  /// Calculate the Eisenhower priority category based on importance and urgency
+  /// 
+  /// Returns:
+  /// - [EisenhowerCategory.doNow] for important and urgent tasks
+  /// - [EisenhowerCategory.decide] for important but not urgent tasks
+  /// - [EisenhowerCategory.delegate] for urgent but not important tasks
+  /// - [EisenhowerCategory.delete] for neither important nor urgent tasks
   EisenhowerCategory calculatePriority({
     required bool isImportant,
     required bool isUrgent,
   }) {
-    log.fine('Calculating priority (Important: $isImportant, Urgent: $isUrgent)');
     if (isImportant && isUrgent) {
       return EisenhowerCategory.doNow;
     } else if (isImportant && !isUrgent) {
@@ -24,15 +22,5 @@ class EisenhowerStrategy implements PrioritizationStrategy<EisenhowerCategory> {
     } else {
       return EisenhowerCategory.delete;
     }
-  }
-
-  @override
-  String getDescription(EisenhowerCategory priority) {
-    return priority.description;
-  }
-
-  @override
-  Color getColor(EisenhowerCategory priority) {
-    return priority.color;
   }
 }
