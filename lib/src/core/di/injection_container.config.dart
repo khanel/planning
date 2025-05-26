@@ -11,10 +11,10 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:hive/hive.dart' as _i979;
 import 'package:injectable/injectable.dart' as _i526;
-import 'package:planning/src/features/task/data/models/unified_record_model.dart' as _i216;
 
 import '../../features/task/data/datasources/task_local_data_source.dart'
     as _i1043;
+import '../../features/task/data/models/unified_record_model.dart' as _i64;
 import '../../features/task/di/task_dependency_injection.dart' as _i649;
 import '../../features/task/domain/repositories/task_repository.dart' as _i81;
 import '../../features/task/domain/usecases/delete_task.dart' as _i227;
@@ -35,7 +35,7 @@ extension GetItInjectableX on _i174.GetIt {
     );
     final hiveModule = _$HiveModule();
     final taskDependencyInjection = _$TaskDependencyInjection();
-    await gh.factoryAsync<_i979.Box<_i216.UnifiedRecordModel>>(
+    await gh.factoryAsync<_i979.Box<_i64.UnifiedRecordModel>>(
       () => hiveModule.unifiedRecordBox,
       preResolve: true,
     );

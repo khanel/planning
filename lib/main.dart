@@ -1,5 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:planning/src/features/task/presentation/screens/task_screen.dart';
-import 'package:planning/src/features/prioritization/presentation/screens/eisenhower_matrix_screen.dart';
+import 'package:planning/src/features/prioritization/presentation/pages/eisenhower_matrix_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:planning/src/features/task/presentation/bloc/task_bloc.dart' as task_bloc;
 import 'package:planning/src/features/prioritization/presentation/bloc/prioritization_bloc.dart';
@@ -13,7 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:planning/src/core/utils/logger.dart';
 import 'package:logging/logging.dart'; // Add this import for Level enum
 
-import 'package:flutter/material.dart';
+
 import 'package:hive_flutter/hive_flutter.dart';
 
 Future<void> main() async {
@@ -43,7 +44,10 @@ Future<void> main() async {
           ),
         ),
         BlocProvider(
-          create: (_) => PrioritizationBloc(getTasks: getTasks),
+          create: (_) => PrioritizationBloc(
+            getTasks: getTasks,
+            saveTask: saveTask,
+          ),
         ),
       ],
       child: MyApp(),
@@ -57,7 +61,7 @@ final _router = GoRouter(
     GoRoute(path: '/', builder: (context, state) => const TaskScreen()),
     GoRoute(
       path: '/eisenhower',
-      builder: (context, state) => const EisenhowerMatrixScreen(),
+      builder: (context, state) => const EisenhowerMatrixPage(),
     ),
   ],
 );
