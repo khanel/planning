@@ -144,7 +144,7 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
                     children: [
                       Expanded(
                         child: Text(
-                          'IMPORTANT',
+                          'NOT IMPORTANT',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
                       ),
                       Expanded(
                         child: Text(
-                          'NOT IMPORTANT',
+                          'IMPORTANT',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
