@@ -4,7 +4,7 @@ import 'package:planning/src/features/prioritization/presentation/widgets/matrix
 import 'package:planning/src/features/task/domain/entities/task.dart';
 
 /// A widget that displays the Eisenhower Matrix with four quadrants and unprioritized tasks
-class EisenhowerMatrix extends StatelessWidget {
+class EisenhowerMatrix extends StatefulWidget {
   /// The list of all tasks to display in the matrix
   final List<Task> tasks;
   
@@ -21,23 +21,60 @@ class EisenhowerMatrix extends StatelessWidget {
     this.onTaskTap,
     this.onPriorityChanged,
   }) : super(key: key);
+  
+  @override
+  State<EisenhowerMatrix> createState() => _EisenhowerMatrixState();
+}
+
+class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
+  // Local copy of tasks to enable immediate UI updates
+  late List<Task> _localTasks;
+  
+  @override
+  void initState() {
+    super.initState();
+    _localTasks = List.from(widget.tasks);
+  }
+  
+  @override
+  void didUpdateWidget(EisenhowerMatrix oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update local tasks when parent widget updates
+    if (widget.tasks != oldWidget.tasks) {
+      _localTasks = List.from(widget.tasks);
+    }
+  }
+  
+  // Handle task priority change locally
+  void _handlePriorityChange(Task task, EisenhowerCategory newPriority) {
+    // Call the parent callback
+    widget.onPriorityChanged?.call(task, newPriority);
+    
+    // Update local state immediately for responsive UI
+    setState(() {
+      final index = _localTasks.indexWhere((t) => t.id == task.id);
+      if (index >= 0) {
+        _localTasks[index] = task.copyWith(priority: newPriority);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     // Filter tasks by quadrant
-    final doNowTasks = tasks.where((task) => 
+    final doNowTasks = _localTasks.where((task) => 
         task.priority == EisenhowerCategory.doNow).toList();
-    final decideTasks = tasks.where((task) => 
+    final decideTasks = _localTasks.where((task) => 
         task.priority == EisenhowerCategory.decide).toList();
-    final delegateTasks = tasks.where((task) => 
+    final delegateTasks = _localTasks.where((task) => 
         task.priority == EisenhowerCategory.delegate).toList();
-    final deleteTasks = tasks.where((task) => 
+    final deleteTasks = _localTasks.where((task) => 
         task.priority == EisenhowerCategory.delete).toList();
-    final unprioritizedTasks = tasks.where((task) => 
+    final unprioritizedTasks = _localTasks.where((task) => 
         task.priority == EisenhowerCategory.unprioritized).toList();
     
     // Print task counts for debugging
-    print('EisenhowerMatrix: Tasks loaded - ${tasks.length}');
+    print('EisenhowerMatrix: Tasks loaded - ${_localTasks.length}');
     print('EisenhowerMatrix: Do Now tasks - ${doNowTasks.length}');
     print('EisenhowerMatrix: Decide tasks - ${decideTasks.length}');
     print('EisenhowerMatrix: Delegate tasks - ${delegateTasks.length}');
@@ -45,7 +82,7 @@ class EisenhowerMatrix extends StatelessWidget {
     print('EisenhowerMatrix: Unprioritized tasks - ${unprioritizedTasks.length}');
     
     // Print task details
-    for (final task in tasks) {
+    for (final task in _localTasks) {
       print('Task: ${task.name}, Priority: ${task.priority.runtimeType} - ${task.priority}');
     }
 
@@ -101,29 +138,30 @@ class EisenhowerMatrix extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: RotatedBox(
-                  quarterTurns: 3,                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'IMPORTANT',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                  quarterTurns: 3,                
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'IMPORTANT',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'NOT IMPORTANT',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'NOT IMPORTANT',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 ),
               ),
               
@@ -144,8 +182,8 @@ class EisenhowerMatrix extends StatelessWidget {
                               description: EisenhowerCategory.doNow.description,
                               tasks: doNowTasks,
                               category: EisenhowerCategory.doNow,
-                              onTaskTap: onTaskTap,
-                              onPriorityChanged: onPriorityChanged,
+                              onTaskTap: widget.onTaskTap,
+                              onPriorityChanged: _handlePriorityChange,
                             ),
                           ),
                           // Q2: Decide (Important & Not Urgent)
@@ -156,8 +194,8 @@ class EisenhowerMatrix extends StatelessWidget {
                               description: EisenhowerCategory.decide.description,
                               tasks: decideTasks,
                               category: EisenhowerCategory.decide,
-                              onTaskTap: onTaskTap,
-                              onPriorityChanged: onPriorityChanged,
+                              onTaskTap: widget.onTaskTap,
+                              onPriorityChanged: _handlePriorityChange,
                             ),
                           ),
                         ],
@@ -177,8 +215,8 @@ class EisenhowerMatrix extends StatelessWidget {
                               description: EisenhowerCategory.delegate.description,
                               tasks: delegateTasks,
                               category: EisenhowerCategory.delegate,
-                              onTaskTap: onTaskTap,
-                              onPriorityChanged: onPriorityChanged,
+                              onTaskTap: widget.onTaskTap,
+                              onPriorityChanged: _handlePriorityChange,
                             ),
                           ),
                           // Q4: Delete (Not Important & Not Urgent)
@@ -189,8 +227,8 @@ class EisenhowerMatrix extends StatelessWidget {
                               description: EisenhowerCategory.delete.description,
                               tasks: deleteTasks,
                               category: EisenhowerCategory.delete,
-                              onTaskTap: onTaskTap,
-                              onPriorityChanged: onPriorityChanged,
+                              onTaskTap: widget.onTaskTap,
+                              onPriorityChanged: _handlePriorityChange,
                             ),
                           ),
                         ],
@@ -283,7 +321,7 @@ class EisenhowerMatrix extends StatelessWidget {
                                 _buildDueDate(task),
                               ],
                             ),
-                            onTap: onTaskTap != null ? () => onTaskTap!(task) : null,
+                            onTap: widget.onTaskTap != null ? () => widget.onTaskTap!(task) : null,
                           ),
                         ),
                       );
