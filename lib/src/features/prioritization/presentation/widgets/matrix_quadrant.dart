@@ -25,6 +25,12 @@ class MatrixQuadrant extends StatelessWidget {
   /// The category this quadrant represents
   final EisenhowerCategory category;
   
+  /// Whether to show an icon indicating importance
+  final bool showImportanceIcon;
+  
+  /// Whether to show an icon indicating urgency
+  final bool showUrgencyIcon;
+  
   /// Creates a MatrixQuadrant widget
   const MatrixQuadrant({
     Key? key,
@@ -35,6 +41,8 @@ class MatrixQuadrant extends StatelessWidget {
     required this.category,
     this.onTaskTap,
     this.onPriorityChanged,
+    this.showImportanceIcon = false,
+    this.showUrgencyIcon = false,
   }) : super(key: key);
 
   @override
@@ -84,19 +92,47 @@ class MatrixQuadrant extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: color.withOpacity(0.8),
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: color.withOpacity(0.8),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (showImportanceIcon)
+                              Icon(
+                                Icons.priority_high,
+                                color: color.withOpacity(0.8),
+                                size: 16,
+                              ),
+                            if (showUrgencyIcon)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4.0),
+                                child: Icon(
+                                  Icons.timelapse,
+                                  color: color.withOpacity(0.8),
+                                  size: 16,
+                                ),
+                              ),
+                          ],
                         ),
-                        Text(
-                          '(${tasks.length})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          child: Text(
+                            '${tasks.length}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],

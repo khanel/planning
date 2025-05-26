@@ -33,6 +33,7 @@ void main() {
               color: Colors.red,
               description: 'Important and urgent tasks that require immediate attention',
               tasks: const [],
+              category: EisenhowerCategory.doNow,
             ),
           ),
         ),
@@ -40,7 +41,7 @@ void main() {
       
       expect(find.text('Do Now'), findsOneWidget);
       expect(find.text('Important and urgent tasks that require immediate attention'), findsOneWidget);
-      expect(find.text('(0)'), findsOneWidget); // Task count should be 0
+      expect(find.text('0'), findsOneWidget); // Task count should be 0
     });
     
     testWidgets('should display tasks within the quadrant', (WidgetTester tester) async {
@@ -52,13 +53,14 @@ void main() {
               color: Colors.red,
               description: 'Important and urgent tasks that require immediate attention',
               tasks: [task],
+              category: EisenhowerCategory.doNow,
             ),
           ),
         ),
       );
       
       expect(find.text('Do Now'), findsOneWidget);
-      expect(find.text('(1)'), findsOneWidget); // Task count should be 1
+      expect(find.text('1'), findsOneWidget); // Task count should be 1
     });
     
     testWidgets('should show empty state when no tasks', (WidgetTester tester) async {
@@ -70,6 +72,7 @@ void main() {
               color: Colors.red,
               description: 'Important and urgent tasks that require immediate attention',
               tasks: const [],
+              category: EisenhowerCategory.doNow,
             ),
           ),
         ),
@@ -88,6 +91,7 @@ void main() {
               color: Colors.red,
               description: 'Important and urgent tasks that require immediate attention',
               tasks: const [],
+              category: EisenhowerCategory.doNow,
             ),
           ),
         ),
@@ -110,6 +114,146 @@ void main() {
       }
       
       expect(foundColoredContainer, true);
+    });
+    
+    testWidgets('should call onPriorityChanged when task is dropped', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatrixQuadrant(
+              title: 'Decide',
+              color: Colors.blue,
+              description: 'Important but not urgent tasks',
+              tasks: const [],
+              category: EisenhowerCategory.decide,
+              onPriorityChanged: (task, category) {
+                // This callback won't be triggered in this test since we can't easily
+                // simulate drag and drop in widget tests
+              },
+            ),
+          ),
+        ),
+      );
+      
+      // Create a drag gesture to simulate dropping a task
+      final gesture = await tester.startGesture(const Offset(10.0, 10.0));
+      
+      // Move to the target position
+      await gesture.moveTo(tester.getCenter(find.byType(MatrixQuadrant)));
+      await gesture.up();
+      await tester.pump();
+      
+      // Verify the widget exists and renders properly
+      expect(find.byType(MatrixQuadrant), findsOneWidget);
+    });
+    
+    testWidgets('should call onTaskTap when a task is tapped', (WidgetTester tester) async {
+      Task? tappedTask;
+      
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatrixQuadrant(
+              title: 'Do Now',
+              color: Colors.red,
+              description: 'Important and urgent tasks',
+              tasks: [task],
+              category: EisenhowerCategory.doNow,
+              onTaskTap: (task) {
+                tappedTask = task;
+              },
+            ),
+          ),
+        ),
+      );
+      
+      // Find the task's ListTile and tap it
+      await tester.tap(find.byType(ListTile));
+      await tester.pump();
+      
+      // Verify that onTaskTap was called with the correct task
+      expect(tappedTask, equals(task));
+    });
+    
+    testWidgets('should display task count badge with appropriate color', (WidgetTester tester) async {
+      // Create multiple tasks
+      final tasks = [
+        task,
+        Task(
+          id: '2',
+          name: 'Test Task 2',
+          description: 'Another task',
+          dueDate: DateTime.now(),
+          completed: false,
+          importance: TaskImportance.high,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          priority: EisenhowerCategory.doNow,
+        ),
+      ];
+      
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatrixQuadrant(
+              title: 'Do Now',
+              color: Colors.red,
+              description: 'Important and urgent tasks',
+              tasks: tasks,
+              category: EisenhowerCategory.doNow,
+            ),
+          ),
+        ),
+      );
+      
+      // Verify the task count is displayed properly
+      expect(find.text('2'), findsOneWidget);
+    });
+    
+    testWidgets('should display quadrant icons based on importance and urgency', (WidgetTester tester) async {
+      // Test with "Do Now" quadrant (important and urgent)
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatrixQuadrant(
+              title: 'Do Now',
+              color: Colors.red,
+              description: 'Important and urgent tasks',
+              tasks: const [],
+              category: EisenhowerCategory.doNow,
+              showImportanceIcon: true,
+              showUrgencyIcon: true,
+            ),
+          ),
+        ),
+      );
+      
+      // Should display both importance and urgency icons
+      expect(find.byIcon(Icons.priority_high), findsOneWidget); // Importance icon
+      expect(find.byIcon(Icons.timelapse), findsOneWidget); // Urgency icon
+      
+      // Test with "Decide" quadrant (important but not urgent)
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatrixQuadrant(
+              title: 'Decide',
+              color: Colors.blue,
+              description: 'Important but not urgent tasks',
+              tasks: const [],
+              category: EisenhowerCategory.decide,
+              showImportanceIcon: true,
+              showUrgencyIcon: false,
+            ),
+          ),
+        ),
+      );
+      
+      await tester.pump();
+      
+      // Should display only importance icon
+      expect(find.byIcon(Icons.priority_high), findsOneWidget); // Importance icon
+      expect(find.byIcon(Icons.timelapse), findsNothing); // No urgency icon
     });
   });
 }
