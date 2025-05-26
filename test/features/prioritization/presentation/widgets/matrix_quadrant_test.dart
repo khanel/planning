@@ -255,5 +255,59 @@ void main() {
       expect(find.byIcon(Icons.priority_high), findsOneWidget); // Importance icon
       expect(find.byIcon(Icons.timelapse), findsNothing); // No urgency icon
     });
+    
+    testWidgets('should create a Draggable with appropriate properties for compact feedback', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatrixQuadrant(
+              title: 'Do Now',
+              color: Colors.red,
+              description: 'Important and urgent tasks',
+              tasks: [task],
+              category: EisenhowerCategory.doNow,
+            ),
+          ),
+        ),
+      );
+      
+      // Find the Draggable widget
+      final draggableFinder = find.byType(Draggable<Task>);
+      expect(draggableFinder, findsOneWidget);
+      
+      // Get the Draggable widget
+      final draggable = tester.widget<Draggable<Task>>(draggableFinder);
+      
+      // Verify the feedbackOffset and dragAnchorStrategy properties
+      expect(draggable.feedbackOffset, equals(Offset.zero));
+      expect(draggable.dragAnchorStrategy, equals(pointerDragAnchorStrategy));
+      
+      // Verify the feedback is a Material widget
+      expect(draggable.feedback, isA<Material>());
+      
+      // Check that the feedback widget doesn't contain a description Text widget
+      bool containsDescription = false;
+      void traverseWidget(Widget widget) {
+        if (widget is Text) {
+          // If we find a Text widget with the task description, set the flag
+          if (widget.data != null && widget.data!.contains('Test Description')) {
+            containsDescription = true;
+          }
+        }
+        
+        if (widget is PreferredSize) {
+          traverseWidget(widget.child);
+        } else if (widget is SingleChildRenderObjectWidget && widget.child != null) {
+          traverseWidget(widget.child!);
+        } else if (widget is MultiChildRenderObjectWidget) {
+          widget.children.forEach(traverseWidget);
+        }
+      }
+      
+      traverseWidget(draggable.feedback);
+      
+      // The feedback should not contain the task description
+      expect(containsDescription, isFalse, reason: 'Feedback should not contain the task description');
+    });
   });
 }

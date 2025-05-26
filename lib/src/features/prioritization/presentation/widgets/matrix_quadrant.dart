@@ -197,32 +197,29 @@ class MatrixQuadrant extends StatelessWidget {
           data: task,
           feedback: Material(
             elevation: 4.0,
+            borderRadius: BorderRadius.circular(8.0),
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.7,
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8.0),
                 border: Border.all(color: color),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    task.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  if (task.description.isNotEmpty)
-                    Text(
-                      task.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
+              child: Text(
+                task.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
+          // Align the feedback widget's center directly under the pointer
+          feedbackOffset: Offset.zero,
+          // Use PointerDragAnchorStrategy.pointer to ensure it's centered on the touch point
+          dragAnchorStrategy: pointerDragAnchorStrategy,
           childWhenDragging: Container(
             margin: const EdgeInsets.only(bottom: 8.0),
             height: 70,
