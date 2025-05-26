@@ -96,13 +96,21 @@ class Task extends Equatable {
   /// Returns the user-assigned quadrant if set and is an EisenhowerCategory, otherwise computes it.
   eisenhower.EisenhowerCategory get eisenhowerCategory {
     if (priority is eisenhower.EisenhowerCategory) {
+      // If the priority is explicitly set to unprioritized, compute it
+      if (priority == eisenhower.EisenhowerCategory.unprioritized) {
+        final strategy = EisenhowerStrategy();
+        return strategy.calculatePriority(
+          isImportant: importance == TaskImportance.high || importance == TaskImportance.veryHigh,
+          isUrgent: isUrgent,
+        );
+      }
       return priority as eisenhower.EisenhowerCategory;
     }
 
     // If no user-assigned priority or not an EisenhowerCategory, compute it
     final strategy = EisenhowerStrategy();
     return strategy.calculatePriority(
-      isImportant: importance == TaskImportance.high,
+      isImportant: importance == TaskImportance.high || importance == TaskImportance.veryHigh,
       isUrgent: isUrgent,
     );
   }

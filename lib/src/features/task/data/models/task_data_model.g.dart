@@ -25,13 +25,16 @@ class TaskDataModelAdapter extends TypeAdapter<TaskDataModel> {
       dueDate: fields[7] as DateTime?,
       completed: fields[8] as bool,
       importance: fields[9] as TaskImportance,
+      priority: fields[10] as eisenhower.EisenhowerCategory?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskDataModel obj) {
     writer
+      ..writeByte(11)
       ..writeByte(10)
+      ..write(obj.priority)
       ..writeByte(5)
       ..write(obj.name)
       ..writeByte(6)
