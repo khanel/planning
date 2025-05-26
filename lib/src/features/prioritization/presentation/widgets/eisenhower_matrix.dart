@@ -61,7 +61,7 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
 
   @override
   Widget build(BuildContext context) {
-    // Filter tasks by quadrant
+    // Filter tasks by quadrant using priority property for explicit user choices
     final doNowTasks = _localTasks.where((task) => 
         task.priority == EisenhowerCategory.doNow).toList();
     final decideTasks = _localTasks.where((task) => 
@@ -83,7 +83,7 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
     
     // Print task details
     for (final task in _localTasks) {
-      print('Task: ${task.name}, Priority: ${task.priority.runtimeType} - ${task.priority}');
+      print('Task: ${task.name}, Priority: ${task.priority.runtimeType} - ${task.priority}, EisenhowerCategory: ${task.eisenhowerCategory}');
     }
 
     return Column(
@@ -241,97 +241,160 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
           ),
         ),
         
-        // Unprioritized tasks section
-        if (unprioritizedTasks.isNotEmpty)
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Unprioritized Tasks (${unprioritizedTasks.length})',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        // Unprioritized tasks section - Always visible, even when empty
+        Expanded(
+          flex: unprioritizedTasks.isNotEmpty ? 2 : 1, // Smaller when empty
+          child: DragTarget<Task>(
+            onAccept: (task) {
+              if (task.priority != EisenhowerCategory.unprioritized) {
+                print('Task dropped in unprioritized section: ${task.name}');
+                _handlePriorityChange(task, EisenhowerCategory.unprioritized);
+              }
+            },
+            onWillAccept: (task) {
+              // Only accept if it's not already unprioritized
+              return task != null && task.priority != EisenhowerCategory.unprioritized;
+            },
+            builder: (context, candidateData, rejectedData) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: candidateData.isNotEmpty 
+                      ? Colors.grey.withOpacity(0.2) // Highlight when dragging over
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: candidateData.isNotEmpty 
+                      ? Border.all(color: Colors.grey.shade400)
+                      : null,
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: unprioritizedTasks.length,
-                    itemBuilder: (context, index) {
-                      final task = unprioritizedTasks[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8.0),
-                        child: Draggable<Task>(
-                          data: task,
-                          feedback: Material(
-                            elevation: 4.0,
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              padding: const EdgeInsets.all(16.0),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8.0),
-                                border: Border.all(color: EisenhowerCategory.unprioritized.color),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    task.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  if (task.description.isNotEmpty)
-                                    Text(
-                                      task.description,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          childWhenDragging: Container(
-                            margin: const EdgeInsets.only(bottom: 8.0),
-                            height: 70,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                          ),
-                          child: ListTile(
-                            title: Text(
-                              task.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  task.description,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                _buildDueDate(task),
-                              ],
-                            ),
-                            onTap: widget.onTaskTap != null ? () => widget.onTaskTap!(task) : null,
-                          ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Unprioritized Tasks (${unprioritizedTasks.length})',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                    Expanded(
+                      child: unprioritizedTasks.isEmpty
+                          ? _buildEmptyUnprioritizedState()
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount: unprioritizedTasks.length,
+                              itemBuilder: (context, index) {
+                                final task = unprioritizedTasks[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8.0),
+                                  child: Draggable<Task>(
+                                    data: task,
+                                    feedback: Material(
+                                      elevation: 4.0,
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width * 0.7,
+                                        padding: const EdgeInsets.all(16.0),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(8.0),
+                                          border: Border.all(color: EisenhowerCategory.unprioritized.color),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              task.name,
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                            if (task.description.isNotEmpty)
+                                              Text(
+                                                task.description,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    childWhenDragging: Container(
+                                      margin: const EdgeInsets.only(bottom: 8.0),
+                                      height: 70,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(8.0),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      title: Text(
+                                        task.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            task.description,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          _buildDueDate(task),
+                                        ],
+                                      ),
+                                      onTap: widget.onTaskTap != null ? () => widget.onTaskTap!(task) : null,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// Builds the empty state for the unprioritized tasks section
+  Widget _buildEmptyUnprioritizedState() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Adjust content based on available space
+        final iconSize = constraints.maxHeight < 60 ? 24.0 : 32.0;
+        final fontSize = constraints.maxHeight < 60 ? 12.0 : 14.0;
+        final spacerHeight = constraints.maxHeight < 60 ? 4.0 : 8.0;
+        
+        return Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.drag_indicator,
+                  color: Colors.grey[400],
+                  size: iconSize,
+                ),
+                SizedBox(height: spacerHeight),
+                Text(
+                  'Drag tasks here to unprioritize them',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: fontSize,
                   ),
                 ),
               ],
             ),
           ),
-      ],
+        );
+      },
     );
   }
   

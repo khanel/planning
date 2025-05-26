@@ -214,7 +214,7 @@ class _TaskListItemState extends State<TaskListItem> {
               children: [
                 Text(widget.task.description),
                 Text(
-                  'Category: ${widget.task.eisenhowerCategory.toString().split('.').last}',
+                  'Category: ${widget.task.priority.toString().split('.').last}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 if (widget.task.dueDate != null && !widget.task.completed)

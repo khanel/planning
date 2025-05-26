@@ -116,8 +116,8 @@ void main() {
       await tester.pump();
       
       // Now check that the task appears in the Do Now quadrant
-      // and the unprioritized section is no longer displayed
-      expect(find.text('Unprioritized Tasks (0)'), findsNothing);
+      // and the unprioritized section shows 0 tasks
+      expect(find.text('Unprioritized Tasks (0)'), findsOneWidget); // Now always visible with (0)
       expect(find.text('Unprioritized Tasks (1)'), findsNothing);
       
       // Rebuild the widget with the updated tasks list to simulate bloc state change

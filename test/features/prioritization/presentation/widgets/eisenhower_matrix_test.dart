@@ -129,7 +129,7 @@ void main() {
       expect(find.text('Unprioritized Task'), findsOneWidget);
     });
     
-    testWidgets('should not display unprioritized tasks section when there are no unprioritized tasks', 
+    testWidgets('should display empty unprioritized tasks section when there are no unprioritized tasks', 
         (WidgetTester tester) async {
       // Remove the unprioritized task
       final tasksWithoutUnprioritized = tasks.where(
@@ -146,8 +146,10 @@ void main() {
         ),
       );
       
-      // Should not find the unprioritized section
-      expect(find.textContaining('Unprioritized Tasks'), findsNothing);
+      // Should find the unprioritized section with (0) tasks
+      expect(find.text('Unprioritized Tasks (0)'), findsOneWidget);
+      // Should find the empty state message
+      expect(find.text('Drag tasks here to unprioritize them'), findsOneWidget);
     });
     
     testWidgets('should format dates correctly in unprioritized tasks', 
