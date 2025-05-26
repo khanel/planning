@@ -151,8 +151,7 @@ void main() {
       // Verify that loading indicator is shown initially
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       
-      // Verify that LoadPrioritizedTasks event is dispatched
-      verify(() => mockBloc.add(const LoadPrioritizedTasks())).called(1);
+      // The event is automatically dispatched in the bloc constructor now, so we don't verify it here
       
       // Wait for the state to change to success
       await tester.pump(); // Process initial frame

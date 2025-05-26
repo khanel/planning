@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:dartz/dartz.dart';
+import 'package:dartz/dartz.dart' hide Task;
+import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart';
 import 'package:planning/src/features/prioritization/presentation/bloc/prioritization_bloc.dart';
 import 'package:planning/src/features/task/domain/entities/task.dart';
@@ -8,9 +9,21 @@ import 'package:planning/src/features/task/data/models/task_data_model.dart';
 import 'package:planning/src/features/task/domain/usecases/get_tasks.dart';
 import 'package:planning/src/features/task/domain/usecases/save_task.dart';
 
+// Create mock classes
+class MockGetTasks extends Mock implements GetTasks {}
+class MockSaveTask extends Mock implements SaveTask {}
+class MockNoParams extends Mock implements NoParams {}
+class MockSaveTaskParams extends Mock implements SaveTaskParams {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(MockNoParams());
+    registerFallbackValue(MockSaveTaskParams());
+  });
   group('PrioritizationBloc', () {
     late PrioritizationBloc bloc;
+    late MockGetTasks mockGetTasks;
+    late MockSaveTask mockSaveTask;
     final DateTime now = DateTime.now();
     
     // Sample tasks for testing
@@ -40,45 +53,40 @@ void main() {
     ];
     
     setUp(() {
-      bloc = PrioritizationBloc();
+      mockGetTasks = MockGetTasks();
+      mockSaveTask = MockSaveTask();
+      
+      // Setup the mock to return our tasks
+      when(() => mockGetTasks(any())).thenAnswer((_) async => Right(mockTasks));
+      
+      bloc = PrioritizationBloc(
+        getTasks: mockGetTasks,
+        saveTask: mockSaveTask,
+      );
     });
     
     tearDown(() {
       bloc.close();
     });
     
-    test('initial state should be PrioritizationInitial', () {
-      expect(bloc.state, isA<PrioritizationInitial>());
+    test('initial state should be PrioritizationLoadInProgress', () {
+      // The bloc now automatically starts loading in the constructor
+      expect(bloc.state, isA<PrioritizationLoadInProgress>());
     });
     
-    test('LoadPrioritizedTasks should emit loading then success state', () async {
-      // This test would normally use mockRepository to return mockTasks
-      // Since our implementation just uses a delay and empty list, we'll just verify states
-      
-      // Act
-      bloc.add(const LoadPrioritizedTasks());
-      
-      // Assert - verify state transitions
+    test('LoadPrioritizedTasks should complete loading', () async {
+      // Wait for the loading to complete
       await expectLater(
         bloc.stream,
-        emitsInOrder([
-          isA<PrioritizationLoadInProgress>(),
-          isA<PrioritizationLoadSuccess>(),
-        ]),
+        emits(isA<PrioritizationLoadSuccess>()),
       );
     });
     
     test('FilterTasks should emit state with filtered tasks', () async {
-      // Setup - first need to get to the success state
-      bloc.add(const LoadPrioritizedTasks());
-      
-      // Wait for the success state
+      // Wait for the loading to complete first
       await expectLater(
         bloc.stream,
-        emitsInOrder([
-          isA<PrioritizationLoadInProgress>(),
-          isA<PrioritizationLoadSuccess>(),
-        ]),
+        emits(isA<PrioritizationLoadSuccess>()),
       );
       
       // Act - apply filter
