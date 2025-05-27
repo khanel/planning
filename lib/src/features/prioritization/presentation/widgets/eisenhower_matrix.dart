@@ -88,15 +88,6 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
 
     return Column(
       children: [
-        // Matrix title and axis labels
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Text(
-            'Eisenhower Matrix',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ),
-        
         // Top axis label (Urgent vs Not Urgent)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
