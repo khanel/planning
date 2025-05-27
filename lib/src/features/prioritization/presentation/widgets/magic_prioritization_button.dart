@@ -31,7 +31,10 @@ class MagicPrioritizationButton extends StatelessWidget {
 
     return FloatingActionButton.extended(
       onPressed: () => _showMagicPrioritizationDialog(context),
-      icon: const Icon(Icons.auto_fix_high),
+      icon: Badge(
+        label: Text(unprioritizedTasks.length.toString()),
+        child: const Icon(Icons.auto_fix_high),
+      ),
       label: const Text('Magic'),
       tooltip: 'Auto-prioritize unprioritized tasks',
       backgroundColor: Colors.purple,

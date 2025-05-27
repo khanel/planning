@@ -62,10 +62,8 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
       }
     });
     
-    // Trigger refresh to sync bloc state with local state changes
-    Future.delayed(const Duration(milliseconds: 100), () {
-      widget.onRefreshRequired?.call();
-    });
+    // Call refresh immediately instead of using a timer to avoid timer issues in tests
+    widget.onRefreshRequired?.call();
   }
 
   @override
