@@ -13,6 +13,9 @@ class EisenhowerMatrix extends StatefulWidget {
   
   /// Callback when a task's priority is changed through drag and drop
   final Function(Task, EisenhowerCategory)? onPriorityChanged;
+  
+  /// Callback triggered after priority changes to refresh the bloc state
+  final VoidCallback? onRefreshRequired;
 
   /// Creates an EisenhowerMatrix widget
   const EisenhowerMatrix({
@@ -20,6 +23,7 @@ class EisenhowerMatrix extends StatefulWidget {
     required this.tasks,
     this.onTaskTap,
     this.onPriorityChanged,
+    this.onRefreshRequired,
   }) : super(key: key);
   
   @override
@@ -56,6 +60,11 @@ class _EisenhowerMatrixState extends State<EisenhowerMatrix> {
       if (index >= 0) {
         _localTasks[index] = task.copyWith(priority: newPriority);
       }
+    });
+    
+    // Trigger refresh to sync bloc state with local state changes
+    Future.delayed(const Duration(milliseconds: 100), () {
+      widget.onRefreshRequired?.call();
     });
   }
 

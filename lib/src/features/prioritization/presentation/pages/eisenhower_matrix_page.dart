@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:planning/src/features/prioritization/domain/eisenhower_category.dart';
 import 'package:planning/src/features/prioritization/presentation/bloc/prioritization_bloc.dart';
 import 'package:planning/src/features/prioritization/presentation/widgets/eisenhower_matrix.dart';
-import 'package:planning/src/features/task/domain/entities/task.dart';
-import 'package:planning/src/core/utils/logger.dart'; // Add logger import
+import 'package:planning/src/features/prioritization/presentation/widgets/magic_prioritization_button.dart';
+import 'package:planning/src/core/utils/logger.dart';
 
 /// A page that displays the Eisenhower Matrix for task prioritization
 class EisenhowerMatrixPage extends StatefulWidget { // Changed to StatefulWidget
@@ -99,6 +99,11 @@ class _EisenhowerMatrixPageState extends State<EisenhowerMatrixPage> {
                         ),
                       );
                 },
+                onRefreshRequired: () {
+                  // Trigger refresh to sync bloc state with local matrix changes
+                  log.info('EisenhowerMatrixPage: Auto-refresh triggered after priority change');
+                  context.read<PrioritizationBloc>().add(const LoadPrioritizedTasks());
+                },
               );
             }
           } else if (state is PrioritizationLoadFailure) {
@@ -107,6 +112,25 @@ class _EisenhowerMatrixPageState extends State<EisenhowerMatrixPage> {
           
           // Default fallback
           return const Center(child: Text('Something went wrong'));
+        },
+      ),
+      floatingActionButton: BlocBuilder<PrioritizationBloc, PrioritizationState>(
+        builder: (context, state) {
+          if (state is PrioritizationLoadSuccess) {
+            // Get unprioritized tasks for the magic button
+            final unprioritizedTasks = state.tasks.where(
+              (task) => task.priority == EisenhowerCategory.unprioritized
+            ).toList();
+            
+            return MagicPrioritizationButton(
+              unprioritizedTasks: unprioritizedTasks,
+              onRefreshRequired: () {
+                log.info('EisenhowerMatrixPage: Auto-refresh triggered from magic button');
+                context.read<PrioritizationBloc>().add(const LoadPrioritizedTasks());
+              },
+            );
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
