@@ -130,4 +130,35 @@ class ScheduleEventDataModel extends UnifiedRecordModel {
       linkedTaskId: scheduleEvent.linkedTaskId,
     );
   }
+
+  // Copy with method for creating modified copies
+  ScheduleEventDataModel copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? title,
+    String? description,
+    DateTime? startTime,
+    DateTime? endTime,
+    bool? isAllDay,
+    String? googleCalendarId,
+    CalendarSyncStatus? syncStatus,
+    DateTime? lastSyncAt,
+    String? linkedTaskId,
+  }) {
+    return ScheduleEventDataModel(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      isAllDay: isAllDay ?? this.isAllDay,
+      googleCalendarId: googleCalendarId ?? this.googleCalendarId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      linkedTaskId: linkedTaskId ?? this.linkedTaskId,
+    );
+  }
 }
