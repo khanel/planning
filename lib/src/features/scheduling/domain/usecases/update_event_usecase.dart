@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:equatable/equatable.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -41,8 +42,11 @@ class UpdateEventUseCase implements UseCase<ScheduleEvent, UpdateEventParams> {
   }
 }
 
-class UpdateEventParams {
+class UpdateEventParams extends Equatable {
   final ScheduleEvent event;
 
-  UpdateEventParams({required this.event});
+  const UpdateEventParams({required this.event});
+
+  @override
+  List<Object> get props => [event];
 }
