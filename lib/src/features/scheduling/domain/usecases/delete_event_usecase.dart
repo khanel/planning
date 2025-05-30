@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:equatable/equatable.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -33,8 +34,11 @@ class DeleteEventUseCase implements UseCase<void, DeleteEventParams> {
   }
 }
 
-class DeleteEventParams {
+class DeleteEventParams extends Equatable {
   final String eventId;
 
   const DeleteEventParams({required this.eventId});
+
+  @override
+  List<Object> get props => [eventId];
 }

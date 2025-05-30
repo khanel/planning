@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:equatable/equatable.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -43,7 +44,7 @@ class GetEventsByDateRangeUseCase implements UseCase<List<ScheduleEvent>, GetEve
   }
 }
 
-class GetEventsByDateRangeParams {
+class GetEventsByDateRangeParams extends Equatable {
   final DateTime startDate;
   final DateTime endDate;
 
@@ -51,4 +52,7 @@ class GetEventsByDateRangeParams {
     required this.startDate,
     required this.endDate,
   });
+
+  @override
+  List<Object> get props => [startDate, endDate];
 }
