@@ -6,11 +6,35 @@ abstract class Failure extends Equatable {
 
 // General failures
 class ServerFailure extends Failure {
+  const ServerFailure();
+  
   @override
   List<Object?> get props => [];
 }
 
 class CacheFailure extends Failure {
+  final String message;
+  
+  const CacheFailure([this.message = 'Cache operation failed']);
+  
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [message];
+}
+
+class NetworkFailure extends Failure {
+  final String message;
+  
+  const NetworkFailure([this.message = 'Network operation failed']);
+  
+  @override
+  List<Object?> get props => [message];
+}
+
+class ValidationFailure extends Failure {
+  final String message;
+  
+  const ValidationFailure([this.message = 'Validation failed']);
+  
+  @override
+  List<Object?> get props => [message];
 }
