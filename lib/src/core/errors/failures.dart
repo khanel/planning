@@ -38,3 +38,12 @@ class ValidationFailure extends Failure {
   @override
   List<Object?> get props => [message];
 }
+
+class AuthFailure extends Failure {
+  final String message;
+  
+  const AuthFailure([this.message = 'Authentication failed']);
+  
+  @override
+  List<Object?> get props => [message];
+}

@@ -29,3 +29,8 @@ class ServerException extends AppException {
 class ValidationException extends AppException {
   const ValidationException([String? message]) : super(message);
 }
+
+/// Exception thrown when authentication fails
+class AuthException extends AppException {
+  const AuthException([String? message]) : super(message);
+}
