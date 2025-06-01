@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/scheduling_bloc.dart';
 import '../widgets/event_card.dart';
+import '../../domain/entities/schedule_event.dart';
 import 'add_edit_event_page.dart';
 
 /// Main page for displaying scheduled events.
@@ -16,6 +17,10 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
+  // Constants
+  static const double _iconSize = 64.0;
+  static const double _spacing = 16.0;
+  
   @override
   void initState() {
     super.initState();
@@ -44,52 +49,15 @@ class _SchedulePageState extends State<SchedulePage> {
           }
           
           if (state is SchedulingError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, size: 64),
-                  const SizedBox(height: 16),
-                  Text('Error: ${state.message}'),
-                ],
-              ),
-            );
+            return _buildErrorState(state.message);
           }
           
           if (state is SchedulingEventsLoaded) {
             if (state.events.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.calendar_today, size: 64),
-                    SizedBox(height: 16),
-                    Text('No events scheduled'),
-                  ],
-                ),
-              );
+              return _buildEmptyState();
             }
             
-            return ListView.builder(
-              itemCount: state.events.length,
-              itemBuilder: (context, index) {
-                final event = state.events[index];
-                return EventCard(
-                  event: event,
-                  onTap: () {
-                    final schedulingBloc = context.read<SchedulingBloc>();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => BlocProvider.value(
-                          value: schedulingBloc,
-                          child: AddEditEventPage(event: event),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            );
+            return _buildEventsList(state.events);
           }
           
           return const Center(
@@ -98,18 +66,71 @@ class _SchedulePageState extends State<SchedulePage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          final schedulingBloc = context.read<SchedulingBloc>();
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => BlocProvider.value(
-                value: schedulingBloc,
-                child: const AddEditEventPage(),
-              ),
-            ),
-          );
-        },
+        onPressed: () => _navigateToAddEvent(),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error, size: _iconSize),
+          SizedBox(height: _spacing),
+          Text('Error: $message'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.calendar_today, size: _iconSize),
+          SizedBox(height: _spacing),
+          const Text('No events scheduled'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventsList(List<ScheduleEvent> events) {
+    return ListView.builder(
+      itemCount: events.length,
+      itemBuilder: (context, index) {
+        final event = events[index];
+        return EventCard(
+          event: event,
+          onTap: () => _navigateToEditEvent(event),
+        );
+      },
+    );
+  }
+
+  void _navigateToAddEvent() {
+    final schedulingBloc = context.read<SchedulingBloc>();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: schedulingBloc,
+          child: const AddEditEventPage(),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEditEvent(ScheduleEvent event) {
+    final schedulingBloc = context.read<SchedulingBloc>();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: schedulingBloc,
+          child: AddEditEventPage(event: event),
+        ),
       ),
     );
   }

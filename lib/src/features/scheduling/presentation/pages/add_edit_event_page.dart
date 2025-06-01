@@ -19,6 +19,12 @@ class AddEditEventPage extends StatefulWidget {
 }
 
 class _AddEditEventPageState extends State<AddEditEventPage> {
+  // Constants
+  static const double _defaultSpacing = 16.0;
+  static const double _buttonSpacing = 32.0;
+  static const int _descriptionMaxLines = 3;
+  static const String _titleRequiredMessage = 'Please enter a title';
+  
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -137,43 +143,61 @@ class _AddEditEventPageState extends State<AddEditEventPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a title';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('All Day'),
-              value: _isAllDay,
-              onChanged: (value) {
-                setState(() {
-                  _isAllDay = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
+            _buildTitleField(),
+            SizedBox(height: _defaultSpacing),
+            _buildDescriptionField(),
+            SizedBox(height: _defaultSpacing),
+            _buildAllDaySwitch(),
+            SizedBox(height: _defaultSpacing),
             _buildDateTimeFields(),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _saveEvent,
-              child: const Text('Save'),
-            ),
+            SizedBox(height: _buttonSpacing),
+            _buildSaveButton(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildTitleField() {
+    return TextFormField(
+      controller: _titleController,
+      decoration: const InputDecoration(labelText: 'Title'),
+      validator: _validateTitle,
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return TextFormField(
+      controller: _descriptionController,
+      decoration: const InputDecoration(labelText: 'Description'),
+      maxLines: _descriptionMaxLines,
+    );
+  }
+
+  Widget _buildAllDaySwitch() {
+    return SwitchListTile(
+      title: const Text('All Day'),
+      value: _isAllDay,
+      onChanged: (value) {
+        setState(() {
+          _isAllDay = value;
+        });
+      },
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return ElevatedButton(
+      onPressed: _saveEvent,
+      child: const Text('Save'),
+    );
+  }
+
+  String? _validateTitle(String? value) {
+    if (value == null || value.isEmpty) {
+      return _titleRequiredMessage;
+    }
+    return null;
   }
 
   Widget _buildDateTimeFields() {
@@ -243,46 +267,68 @@ class _AddEditEventPageState extends State<AddEditEventPage> {
 
   void _saveEvent() {
     if (_formKey.currentState!.validate()) {
-      final startDateTime = _isAllDay
-          ? _startDate
-          : DateTime(
-              _startDate.year,
-              _startDate.month,
-              _startDate.day,
-              _startTime.hour,
-              _startTime.minute,
-            );
+      final event = _createEventFromForm();
+      _dispatchEventToBloc(event);
+    }
+  }
 
-      final endDateTime = _isAllDay
-          ? DateTime(_endDate.year, _endDate.month, _endDate.day, 23, 59, 59)
-          : DateTime(
-              _endDate.year,
-              _endDate.month,
-              _endDate.day,
-              _endTime.hour,
-              _endTime.minute,
-            );
+  ScheduleEvent _createEventFromForm() {
+    final startDateTime = _createStartDateTime();
+    final endDateTime = _createEndDateTime();
+    
+    return ScheduleEvent(
+      id: widget.event?.id ?? _generateEventId(),
+      title: _titleController.text,
+      description: _getDescriptionOrNull(),
+      startTime: startDateTime,
+      endTime: endDateTime,
+      isAllDay: _isAllDay,
+      createdAt: widget.event?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+      googleCalendarId: widget.event?.googleCalendarId,
+      syncStatus: widget.event?.syncStatus ?? CalendarSyncStatus.notSynced,
+      lastSyncAt: widget.event?.lastSyncAt,
+      linkedTaskId: widget.event?.linkedTaskId,
+    );
+  }
 
-      final event = ScheduleEvent(
-        id: widget.event?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _titleController.text,
-        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-        startTime: startDateTime,
-        endTime: endDateTime,
-        isAllDay: _isAllDay,
-        createdAt: widget.event?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-        googleCalendarId: widget.event?.googleCalendarId,
-        syncStatus: widget.event?.syncStatus ?? CalendarSyncStatus.notSynced,
-        lastSyncAt: widget.event?.lastSyncAt,
-        linkedTaskId: widget.event?.linkedTaskId,
-      );
+  DateTime _createStartDateTime() {
+    return _isAllDay
+        ? _startDate
+        : DateTime(
+            _startDate.year,
+            _startDate.month,
+            _startDate.day,
+            _startTime.hour,
+            _startTime.minute,
+          );
+  }
 
-      if (widget.event != null) {
-        context.read<SchedulingBloc>().add(UpdateEvent(event: event));
-      } else {
-        context.read<SchedulingBloc>().add(CreateEvent(event: event));
-      }
+  DateTime _createEndDateTime() {
+    return _isAllDay
+        ? DateTime(_endDate.year, _endDate.month, _endDate.day, 23, 59, 59)
+        : DateTime(
+            _endDate.year,
+            _endDate.month,
+            _endDate.day,
+            _endTime.hour,
+            _endTime.minute,
+          );
+  }
+
+  String _generateEventId() {
+    return DateTime.now().millisecondsSinceEpoch.toString();
+  }
+
+  String? _getDescriptionOrNull() {
+    return _descriptionController.text.isEmpty ? null : _descriptionController.text;
+  }
+
+  void _dispatchEventToBloc(ScheduleEvent event) {
+    if (widget.event != null) {
+      context.read<SchedulingBloc>().add(UpdateEvent(event: event));
+    } else {
+      context.read<SchedulingBloc>().add(CreateEvent(event: event));
     }
   }
 }

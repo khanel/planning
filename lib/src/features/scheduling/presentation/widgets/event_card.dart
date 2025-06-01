@@ -7,6 +7,11 @@ import '../../domain/entities/schedule_event.dart';
 /// This widget shows event title, description, and time in a card format.
 /// It supports both all-day and timed events with proper formatting.
 class EventCard extends StatelessWidget {
+  // Constants
+  static const String _allDayText = 'All Day';
+  static const String _timeFormatPattern = 'h:mm a';
+  static const String _timeSeparator = ' - ';
+  
   final ScheduleEvent event;
   final VoidCallback? onTap;
 
@@ -22,27 +27,35 @@ class EventCard extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.event),
         title: Text(event.title),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(event.description ?? ''),
-            Text(_formatTime()),
-          ],
-        ),
+        subtitle: _buildSubtitle(),
         onTap: onTap,
       ),
     );
   }
 
+  Widget _buildSubtitle() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_hasDescription()) Text(event.description!),
+        Text(_formatTime()),
+      ],
+    );
+  }
+
+  bool _hasDescription() {
+    return event.description != null && event.description!.isNotEmpty;
+  }
+
   String _formatTime() {
     if (event.isAllDay) {
-      return 'All Day';
+      return _allDayText;
     }
     
-    final timeFormat = DateFormat('h:mm a');
+    final timeFormat = DateFormat(_timeFormatPattern);
     final startTime = timeFormat.format(event.startTime);
     final endTime = timeFormat.format(event.endTime);
     
-    return '$startTime - $endTime';
+    return '$startTime$_timeSeparator$endTime';
   }
 }
