@@ -13,6 +13,20 @@ import 'package:planning/src/core/errors/exceptions.dart';
 class MockGoogleCalendarDatasource extends Mock implements GoogleCalendarDatasource {}
 
 void main() {
+  setUpAll(() {
+    // Register fallback value for CalendarEvent
+    registerFallbackValue(
+      CalendarEvent(
+        id: 'fallback',
+        title: 'Fallback Event',
+        description: 'Fallback Description',
+        startTime: DateTime.now(),
+        endTime: DateTime.now().add(const Duration(hours: 1)),
+        isAllDay: false,
+      ),
+    );
+  });
+
   group('CalendarRepositoryImpl', () {
     late CalendarRepository repository;
     late MockGoogleCalendarDatasource mockDatasource;
