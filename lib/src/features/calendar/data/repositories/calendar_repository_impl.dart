@@ -11,6 +11,35 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
   CalendarRepositoryImpl({required this.datasource});
 
+  /// Handles exceptions and converts them to appropriate failures
+  Either<Failure, T> _handleError<T>(Exception exception) {
+    switch (exception.runtimeType) {
+      case AuthException:
+        return const Left(AuthFailure());
+      case NetworkException:
+        return const Left(NetworkFailure());
+      case ServerException:
+        return const Left(ServerFailure());
+      default:
+        return const Left(UnknownFailure());
+    }
+  }
+
+  /// Executes a datasource operation and handles exceptions
+  Future<Either<Failure, T>> _executeOperation<T>(
+    Future<T> Function() operation,
+  ) async {
+    try {
+      final result = await operation();
+      return Right(result);
+    } catch (e) {
+      if (e is Exception) {
+        return _handleError<T>(e);
+      }
+      return const Left(UnknownFailure());
+    }
+  }
+
   @override
   Future<Either<Failure, List<CalendarEvent>>> getEvents({
     required DateTime timeMin,
@@ -18,23 +47,12 @@ class CalendarRepositoryImpl implements CalendarRepository {
     String? calendarId,
     int? maxResults,
   }) async {
-    try {
-      final events = await datasource.getEvents(
-        timeMin: timeMin,
-        timeMax: timeMax,
-        calendarId: calendarId,
-        maxResults: maxResults,
-      );
-      return Right(events);
-    } on AuthException {
-      return const Left(AuthFailure());
-    } on NetworkException {
-      return const Left(NetworkFailure());
-    } on ServerException {
-      return const Left(ServerFailure());
-    } catch (e) {
-      return const Left(UnknownFailure());
-    }
+    return _executeOperation(() => datasource.getEvents(
+      timeMin: timeMin,
+      timeMax: timeMax,
+      calendarId: calendarId,
+      maxResults: maxResults,
+    ));
   }
 
   @override
@@ -42,21 +60,10 @@ class CalendarRepositoryImpl implements CalendarRepository {
     required CalendarEvent event,
     required String calendarId,
   }) async {
-    try {
-      final createdEvent = await datasource.createEvent(
-        event: event,
-        calendarId: calendarId,
-      );
-      return Right(createdEvent);
-    } on AuthException {
-      return const Left(AuthFailure());
-    } on NetworkException {
-      return const Left(NetworkFailure());
-    } on ServerException {
-      return const Left(ServerFailure());
-    } catch (e) {
-      return const Left(UnknownFailure());
-    }
+    return _executeOperation(() => datasource.createEvent(
+      event: event,
+      calendarId: calendarId,
+    ));
   }
 
   @override
@@ -64,21 +71,10 @@ class CalendarRepositoryImpl implements CalendarRepository {
     required CalendarEvent event,
     required String calendarId,
   }) async {
-    try {
-      final updatedEvent = await datasource.updateEvent(
-        event: event,
-        calendarId: calendarId,
-      );
-      return Right(updatedEvent);
-    } on AuthException {
-      return const Left(AuthFailure());
-    } on NetworkException {
-      return const Left(NetworkFailure());
-    } on ServerException {
-      return const Left(ServerFailure());
-    } catch (e) {
-      return const Left(UnknownFailure());
-    }
+    return _executeOperation(() => datasource.updateEvent(
+      event: event,
+      calendarId: calendarId,
+    ));
   }
 
   @override
@@ -86,20 +82,9 @@ class CalendarRepositoryImpl implements CalendarRepository {
     required String eventId,
     required String calendarId,
   }) async {
-    try {
-      final result = await datasource.deleteEvent(
-        eventId: eventId,
-        calendarId: calendarId,
-      );
-      return Right(result);
-    } on AuthException {
-      return const Left(AuthFailure());
-    } on NetworkException {
-      return const Left(NetworkFailure());
-    } on ServerException {
-      return const Left(ServerFailure());
-    } catch (e) {
-      return const Left(UnknownFailure());
-    }
+    return _executeOperation(() => datasource.deleteEvent(
+      eventId: eventId,
+      calendarId: calendarId,
+    ));
   }
 }
