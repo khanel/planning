@@ -47,3 +47,12 @@ class AuthFailure extends Failure {
   @override
   List<Object?> get props => [message];
 }
+
+class UnknownFailure extends Failure {
+  final String message;
+  
+  const UnknownFailure([this.message = 'Unknown error occurred']);
+  
+  @override
+  List<Object?> get props => [message];
+}
