@@ -5,14 +5,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
 import 'package:planning/src/features/calendar/domain/repositories/calendar_repository.dart';
-import 'package:planning/src/features/calendar/domain/usecases/create_event.dart';
+import 'package:planning/src/features/calendar/domain/usecases/update_event.dart';
 
 class MockCalendarRepository extends Mock implements CalendarRepository {}
 
 class FakeCalendarEvent extends Fake implements CalendarEvent {}
 
 void main() {
-  late CreateEvent usecase;
+  late UpdateEvent usecase;
   late MockCalendarRepository mockRepository;
 
   setUpAll(() {
@@ -21,28 +21,29 @@ void main() {
 
   setUp(() {
     mockRepository = MockCalendarRepository();
-    usecase = CreateEvent(repository: mockRepository);
+    usecase = UpdateEvent(repository: mockRepository);
   });
 
   final tCalendarEvent = CalendarEvent(
     id: 'test-event-1',
-    title: 'Test Event',
-    description: 'Test Description',
+    title: 'Updated Test Event',
+    description: 'Updated Test Description',
     startTime: DateTime(2024, 1, 15, 10, 0),
     endTime: DateTime(2024, 1, 15, 11, 0),
     isAllDay: false,
     calendarId: 'primary',
+    googleEventId: 'google-123',
   );
 
-  final tParams = CreateEventParams(
+  final tParams = UpdateEventParams(
     event: tCalendarEvent,
     calendarId: 'primary',
   );
 
-  group('CreateEvent', () {
-    test('should create event successfully when repository call succeeds', () async {
+  group('UpdateEvent', () {
+    test('should update event successfully when repository call succeeds', () async {
       // arrange
-      when(() => mockRepository.createEvent(
+      when(() => mockRepository.updateEvent(
         event: any(named: 'event'),
         calendarId: any(named: 'calendarId'),
       )).thenAnswer((_) async => Right(tCalendarEvent));
@@ -52,7 +53,7 @@ void main() {
 
       // assert
       expect(result, Right(tCalendarEvent));
-      verify(() => mockRepository.createEvent(
+      verify(() => mockRepository.updateEvent(
         event: tCalendarEvent,
         calendarId: 'primary',
       )).called(1);
@@ -61,8 +62,8 @@ void main() {
 
     test('should return ServerFailure when repository call fails', () async {
       // arrange
-      const tFailure = ServerFailure('Failed to create event');
-      when(() => mockRepository.createEvent(
+      const tFailure = ServerFailure();
+      when(() => mockRepository.updateEvent(
         event: any(named: 'event'),
         calendarId: any(named: 'calendarId'),
       )).thenAnswer((_) async => const Left(tFailure));
@@ -72,25 +73,25 @@ void main() {
 
       // assert
       expect(result, const Left(tFailure));
-      verify(() => mockRepository.createEvent(
+      verify(() => mockRepository.updateEvent(
         event: tCalendarEvent,
         calendarId: 'primary',
       )).called(1);
       verifyNoMoreInteractions(mockRepository);
     });
 
-    test('should return ValidationFailure when event title is empty', () async {
+    test('should return ValidationFailure when event ID is empty', () async {
       // arrange
       final invalidEvent = CalendarEvent(
-        id: 'test-event-1',
-        title: '', // Invalid: empty title
-        description: 'Test Description',
+        id: '', // Invalid: empty ID
+        title: 'Updated Test Event',
+        description: 'Updated Test Description',
         startTime: DateTime(2024, 1, 15, 10, 0),
         endTime: DateTime(2024, 1, 15, 11, 0),
         isAllDay: false,
         calendarId: 'primary',
       );
-      final invalidParams = CreateEventParams(
+      final invalidParams = UpdateEventParams(
         event: invalidEvent,
         calendarId: 'primary',
       );
@@ -104,7 +105,38 @@ void main() {
         (failure) => expect(failure, isA<ValidationFailure>()),
         (event) => fail('Expected ValidationFailure'),
       );
-      verifyNever(() => mockRepository.createEvent(
+      verifyNever(() => mockRepository.updateEvent(
+        event: any(named: 'event'),
+        calendarId: any(named: 'calendarId'),
+      ));
+    });
+
+    test('should return ValidationFailure when event title is empty', () async {
+      // arrange
+      final invalidEvent = CalendarEvent(
+        id: 'test-event-1',
+        title: '', // Invalid: empty title
+        description: 'Updated Test Description',
+        startTime: DateTime(2024, 1, 15, 10, 0),
+        endTime: DateTime(2024, 1, 15, 11, 0),
+        isAllDay: false,
+        calendarId: 'primary',
+      );
+      final invalidParams = UpdateEventParams(
+        event: invalidEvent,
+        calendarId: 'primary',
+      );
+
+      // act
+      final result = await usecase(invalidParams);
+
+      // assert
+      expect(result.isLeft(), true);
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
+        (event) => fail('Expected ValidationFailure'),
+      );
+      verifyNever(() => mockRepository.updateEvent(
         event: any(named: 'event'),
         calendarId: any(named: 'calendarId'),
       ));
@@ -112,7 +144,7 @@ void main() {
 
     test('should return ValidationFailure when calendar ID is empty', () async {
       // arrange
-      final invalidParams = CreateEventParams(
+      final invalidParams = UpdateEventParams(
         event: tCalendarEvent,
         calendarId: '', // Invalid: empty calendarId
       );
@@ -126,24 +158,24 @@ void main() {
         (failure) => expect(failure, isA<ValidationFailure>()),
         (event) => fail('Expected ValidationFailure'),
       );
-      verifyNever(() => mockRepository.createEvent(
+      verifyNever(() => mockRepository.updateEvent(
         event: any(named: 'event'),
         calendarId: any(named: 'calendarId'),
       ));
     });
 
-    test('should return ValidationFailure when end time is before start time', () async {
+    test('should return ValidationFailure when end time is before start time for non-all-day events', () async {
       // arrange
       final invalidEvent = CalendarEvent(
         id: 'test-event-1',
-        title: 'Test Event',
-        description: 'Test Description',
+        title: 'Updated Test Event',
+        description: 'Updated Test Description',
         startTime: DateTime(2024, 1, 15, 11, 0), // After end time
         endTime: DateTime(2024, 1, 15, 10, 0),   // Before start time
         isAllDay: false,
         calendarId: 'primary',
       );
-      final invalidParams = CreateEventParams(
+      final invalidParams = UpdateEventParams(
         event: invalidEvent,
         calendarId: 'primary',
       );
@@ -157,7 +189,7 @@ void main() {
         (failure) => expect(failure, isA<ValidationFailure>()),
         (event) => fail('Expected ValidationFailure'),
       );
-      verifyNever(() => mockRepository.createEvent(
+      verifyNever(() => mockRepository.updateEvent(
         event: any(named: 'event'),
         calendarId: any(named: 'calendarId'),
       ));
@@ -167,18 +199,18 @@ void main() {
       // arrange
       final allDayEvent = CalendarEvent(
         id: 'test-event-1',
-        title: 'All Day Event',
-        description: 'Test Description',
+        title: 'Updated All Day Event',
+        description: 'Updated Test Description',
         startTime: DateTime(2024, 1, 15),
         endTime: DateTime(2024, 1, 15, 23, 59, 59),
         isAllDay: true,
         calendarId: 'primary',
       );
-      final allDayParams = CreateEventParams(
+      final allDayParams = UpdateEventParams(
         event: allDayEvent,
         calendarId: 'primary',
       );
-      when(() => mockRepository.createEvent(
+      when(() => mockRepository.updateEvent(
         event: any(named: 'event'),
         calendarId: any(named: 'calendarId'),
       )).thenAnswer((_) async => Right(allDayEvent));
@@ -188,17 +220,36 @@ void main() {
 
       // assert
       expect(result, Right(allDayEvent));
-      verify(() => mockRepository.createEvent(
+      verify(() => mockRepository.updateEvent(
         event: allDayEvent,
+        calendarId: 'primary',
+      )).called(1);
+    });
+
+    test('should handle NetworkFailure gracefully', () async {
+      // arrange
+      const tFailure = NetworkFailure();
+      when(() => mockRepository.updateEvent(
+        event: any(named: 'event'),
+        calendarId: any(named: 'calendarId'),
+      )).thenAnswer((_) async => const Left(tFailure));
+
+      // act
+      final result = await usecase(tParams);
+
+      // assert
+      expect(result, const Left(tFailure));
+      verify(() => mockRepository.updateEvent(
+        event: tCalendarEvent,
         calendarId: 'primary',
       )).called(1);
     });
   });
 
-  group('CreateEventParams', () {
+  group('UpdateEventParams', () {
     test('should create params with event and calendarId', () {
       // act
-      final params = CreateEventParams(
+      final params = UpdateEventParams(
         event: tCalendarEvent,
         calendarId: 'primary',
       );
@@ -211,11 +262,11 @@ void main() {
 
     test('should support equality comparison', () {
       // arrange
-      final params1 = CreateEventParams(
+      final params1 = UpdateEventParams(
         event: tCalendarEvent,
         calendarId: 'primary',
       );
-      final params2 = CreateEventParams(
+      final params2 = UpdateEventParams(
         event: tCalendarEvent,
         calendarId: 'primary',
       );
