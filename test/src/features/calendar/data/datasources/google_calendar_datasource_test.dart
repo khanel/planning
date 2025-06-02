@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:googleapis/calendar/v3.dart';
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:planning/src/features/calendar/data/datasources/google_calendar_datasource.dart';
+import 'package:planning/src/features/calendar/data/datasources/google_calendar_datasource_impl.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
 
 // Mock classes for testing
@@ -15,51 +15,6 @@ class MockEventDateTime extends Mock implements EventDateTime {}
 // Fake classes for mocktail fallback values
 class FakeEvent extends Fake implements Event {}
 class FakeEventDateTime extends Fake implements EventDateTime {}
-
-// Concrete implementation we're testing (will be created in GREEN phase)
-class GoogleCalendarDatasourceImpl implements GoogleCalendarDatasource {
-  final CalendarApi calendarApi;
-
-  GoogleCalendarDatasourceImpl({required this.calendarApi});
-
-  @override
-  Future<List<CalendarEvent>> getEvents({
-    required DateTime timeMin,
-    required DateTime timeMax,
-    String? calendarId,
-    int? maxResults,
-  }) {
-    // This will fail initially (RED phase)
-    throw UnimplementedError('getEvents not implemented yet');
-  }
-
-  @override
-  Future<CalendarEvent> createEvent({
-    required CalendarEvent event,
-    required String calendarId,
-  }) {
-    // This will fail initially (RED phase)
-    throw UnimplementedError('createEvent not implemented yet');
-  }
-
-  @override
-  Future<CalendarEvent> updateEvent({
-    required CalendarEvent event,
-    required String calendarId,
-  }) {
-    // This will fail initially (RED phase)
-    throw UnimplementedError('updateEvent not implemented yet');
-  }
-
-  @override
-  Future<bool> deleteEvent({
-    required String eventId,
-    required String calendarId,
-  }) {
-    // This will fail initially (RED phase)
-    throw UnimplementedError('deleteEvent not implemented yet');
-  }
-}
 
 void main() {
   late GoogleCalendarDatasourceImpl datasource;
