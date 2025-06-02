@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:dartz/dartz.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
+import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:planning/src/core/auth/google_auth_service.dart';
 import 'package:planning/src/core/errors/failures.dart';
 
@@ -11,12 +12,20 @@ class MockGoogleSignIn extends Mock implements GoogleSignIn {}
 class MockGoogleSignInAccount extends Mock implements GoogleSignInAccount {}
 class MockGoogleSignInAuthentication extends Mock implements GoogleSignInAuthentication {}
 
+// Fake classes for fallback values
+class FakeAccessCredentials extends Fake implements AccessCredentials {}
+
 void main() {
   group('GoogleAuthService', () {
     late GoogleAuthService authService;
     late MockGoogleSignIn mockGoogleSignIn;
     late MockGoogleSignInAccount mockAccount;
     late MockGoogleSignInAuthentication mockAuthentication;
+
+    setUpAll(() {
+      // Register fallback values for mocktail
+      registerFallbackValue(FakeAccessCredentials());
+    });
 
     setUp(() {
       mockGoogleSignIn = MockGoogleSignIn();
@@ -62,7 +71,7 @@ void main() {
         expect(result.fold((l) => l, (r) => null), isA<AuthFailure>());
       });
 
-      test('should return AuthFailure when scope request is denied', () async {
+      test('should return false when scope request is denied', () async {
         // Arrange
         const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
         when(() => mockGoogleSignIn.signIn())
@@ -73,9 +82,10 @@ void main() {
         // Act
         final result = await authService.signIn(scopes: scopes);
 
-        // Assert
-        expect(result, isA<Left<Failure, bool>>());
-        expect(result.fold((l) => l, (r) => null), isA<AuthFailure>());
+        // Assert - Based on Google Sign-In v6.3.0 documentation:
+        // requestScopes returns boolean indicating if scopes were granted
+        expect(result, isA<Right<Failure, bool>>());
+        expect(result.fold((l) => null, (r) => r), false);
       });
 
       test('should return AuthFailure when an exception occurs', () async {
