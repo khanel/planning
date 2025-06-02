@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/core/usecases/usecase.dart';
 import 'package:planning/src/features/calendar/domain/repositories/calendar_repository.dart';
+import 'shared/calendar_event_validator.dart';
 
 /// Use case for deleting a calendar event
 class DeleteEvent implements UseCase<bool, DeleteEventParams> {
@@ -12,10 +13,16 @@ class DeleteEvent implements UseCase<bool, DeleteEventParams> {
 
   @override
   Future<Either<Failure, bool>> call(DeleteEventParams params) async {
-    // Validate parameters
-    final validationResult = _validateParams(params);
-    if (validationResult != null) {
-      return Left(validationResult);
+    // Validate event ID
+    final eventIdValidationResult = CalendarEventValidator.validateEventId(params.eventId);
+    if (eventIdValidationResult != null) {
+      return Left(eventIdValidationResult);
+    }
+
+    // Validate calendar ID
+    final calendarIdValidationResult = CalendarEventValidator.validateCalendarId(params.calendarId);
+    if (calendarIdValidationResult != null) {
+      return Left(calendarIdValidationResult);
     }
 
     // Trim IDs
@@ -26,20 +33,6 @@ class DeleteEvent implements UseCase<bool, DeleteEventParams> {
       eventId: trimmedEventId,
       calendarId: trimmedCalendarId,
     );
-  }
-
-  ValidationFailure? _validateParams(DeleteEventParams params) {
-    // Check if event ID is not empty after trimming
-    if (params.eventId.trim().isEmpty) {
-      return const ValidationFailure('Event ID cannot be empty');
-    }
-
-    // Check if calendar ID is not empty after trimming
-    if (params.calendarId.trim().isEmpty) {
-      return const ValidationFailure('Calendar ID cannot be empty');
-    }
-
-    return null; // No validation errors
   }
 }
 

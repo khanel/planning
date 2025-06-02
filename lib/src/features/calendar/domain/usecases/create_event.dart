@@ -4,6 +4,7 @@ import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/core/usecases/usecase.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
 import 'package:planning/src/features/calendar/domain/repositories/calendar_repository.dart';
+import 'shared/calendar_event_validator.dart';
 
 /// Use case for creating a new calendar event
 class CreateEvent implements UseCase<CalendarEvent, CreateEventParams> {
@@ -14,46 +15,24 @@ class CreateEvent implements UseCase<CalendarEvent, CreateEventParams> {
   @override
   Future<Either<Failure, CalendarEvent>> call(CreateEventParams params) async {
     // Validate event parameters
-    final validationResult = _validateEvent(params.event);
-    if (validationResult != null) {
-      return Left(validationResult);
+    final eventValidationResult = CalendarEventValidator.validateEvent(params.event);
+    if (eventValidationResult != null) {
+      return Left(eventValidationResult);
     }
 
     // Validate calendar ID
-    if (params.calendarId.trim().isEmpty) {
-      return const Left(ValidationFailure('Calendar ID cannot be empty'));
+    final calendarIdValidationResult = CalendarEventValidator.validateCalendarId(params.calendarId);
+    if (calendarIdValidationResult != null) {
+      return Left(calendarIdValidationResult);
     }
 
-    // Create updated event with trimmed title
-    final eventWithTrimmedTitle = CalendarEvent(
-      id: params.event.id,
-      title: params.event.title.trim(),
-      description: params.event.description,
-      startTime: params.event.startTime,
-      endTime: params.event.endTime,
-      isAllDay: params.event.isAllDay,
-      calendarId: params.event.calendarId,
-      googleEventId: params.event.googleEventId,
-    );
+    // Create normalized event
+    final normalizedEvent = CalendarEventValidator.normalizeEvent(params.event);
 
     return await repository.createEvent(
-      event: eventWithTrimmedTitle,
+      event: normalizedEvent,
       calendarId: params.calendarId,
     );
-  }
-
-  ValidationFailure? _validateEvent(CalendarEvent event) {
-    // Check if title is not empty after trimming
-    if (event.title.trim().isEmpty) {
-      return const ValidationFailure('Event title cannot be empty');
-    }
-
-    // Check if end time is after start time for non-all-day events
-    if (!event.isAllDay && event.endTime.isBefore(event.startTime)) {
-      return const ValidationFailure('End time must be after start time');
-    }
-
-    return null; // No validation errors
   }
 }
 
