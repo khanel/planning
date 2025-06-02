@@ -63,7 +63,7 @@ class GoogleAuthService {
       }
 
       final credentials = AccessCredentials(
-        AccessToken('Bearer', accessToken, DateTime.now().add(const Duration(hours: 1))),
+        AccessToken('Bearer', accessToken, DateTime.now().toUtc().add(const Duration(hours: 1))),
         null,
         ['https://www.googleapis.com/auth/calendar'],
       );
