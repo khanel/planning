@@ -44,7 +44,7 @@ class EventCard extends StatelessWidget {
   }
 
   bool _hasDescription() {
-    return event.description != null && event.description!.isNotEmpty;
+    return event.description != null;
   }
 
   String _formatTime() {
