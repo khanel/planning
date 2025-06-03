@@ -26,11 +26,22 @@ class CalendarSyncService {
   /// Storage for last sync timestamp
   DateTime? _lastSyncTime;
 
-  // REFACTOR: Extracted constants for better maintainability
+  // REFACTOR: Configuration constants for better maintainability and easy customization
   static const String _calendarScope = 'https://www.googleapis.com/auth/calendar';
   static const String _primaryCalendarId = 'primary';
   static const int _defaultSyncRangeDays = 30;
   static const int _defaultFutureRangeDays = 365;
+  static const Duration _defaultEventDuration = Duration(hours: 1);
+  static const String _eventOrderBy = 'startTime';
+  static const bool _showDeletedEvents = true;
+  static const bool _singleEventsOnly = true;
+  
+  // REFACTOR: Error messages for better consistency and maintainability
+  static const String _authFailureMessage = 'Authentication failed';
+  static const String _syncFailureMessage = 'Calendar sync failed';
+  static const String _tokenRefreshMessage = 'Token refresh required - please retry sync';
+  static const String _networkFailureMessage = 'Network error occurred';
+  static const String _serverFailureMessage = 'Server error occurred';
 
   /// Constructor for direct GoogleSignIn and CalendarApi usage (legacy)
   CalendarSyncService({
@@ -155,8 +166,8 @@ class CalendarSyncService {
         _primaryCalendarId,
         timeMin: timeMin,
         timeMax: timeMax,
-        singleEvents: true,
-        orderBy: 'startTime',
+        singleEvents: _singleEventsOnly,
+        orderBy: _eventOrderBy,
       );
 
       final calendarEvents = <CalendarEvent>[];
@@ -168,7 +179,7 @@ class CalendarSyncService {
               title: event.summary!,
               description: event.description ?? '',
               startTime: event.start?.dateTime ?? DateTime.now(),
-              endTime: event.end?.dateTime ?? DateTime.now().add(const Duration(hours: 1)),
+              endTime: event.end?.dateTime ?? DateTime.now().add(_defaultEventDuration),
               isAllDay: event.start?.date != null, // All-day if date without time
             ));
           }
@@ -183,13 +194,13 @@ class CalendarSyncService {
           final apiResult = await authService!.getCalendarApi();
           if (apiResult.isRight()) {
             // Token was refreshed, but don't retry automatically to avoid infinite recursion
-            return const Left(ServerFailure('Token refresh required - please retry sync'));
+            return Left(ServerFailure(_tokenRefreshMessage));
           }
         } catch (_) {
           // Ignore refresh attempt error
         }
       }
-      return const Left(ServerFailure('Calendar sync failed'));
+      return Left(ServerFailure(_syncFailureMessage));
     }
   }
 
@@ -226,8 +237,8 @@ class CalendarSyncService {
         _primaryCalendarId,
         timeMin: _getDefaultStartTime(),
         timeMax: _getDefaultEndTime(),
-        singleEvents: true,
-        orderBy: 'startTime',
+        singleEvents: _singleEventsOnly,
+        orderBy: _eventOrderBy,
       );
 
       final calendarEvents = _convertEventsList(eventsList.items ?? []);
@@ -255,7 +266,7 @@ class CalendarSyncService {
       final eventsList = await events.list(
         _primaryCalendarId,
         syncToken: syncToken,
-        showDeleted: true,
+        showDeleted: _showDeletedEvents,
       );
 
       final calendarEvents = _convertEventsList(eventsList.items ?? []);
@@ -324,25 +335,25 @@ class CalendarSyncService {
   /// Handle authentication errors with proper error mapping
   Either<Failure, bool> _handleAuthError(Object error) {
     // Log error details in production, this would use a proper logger
-    return const Left(AuthFailure());
+    return Left(AuthFailure(_authFailureMessage));
   }
 
   /// Handle sync operation errors with specific error mapping
   Either<Failure, List<CalendarEvent>> _handleSyncError(Object error) {
     final errorString = error.toString();
     if (errorString.contains('Authentication') || errorString.contains('401')) {
-      return const Left(AuthFailure());
+      return Left(AuthFailure(_authFailureMessage));
     }
-    return const Left(NetworkFailure());
+    return Left(NetworkFailure(_networkFailureMessage));
   }
 
   /// Handle incremental sync errors with sync token invalidation detection
   Either<Failure, List<CalendarEvent>> _handleIncrementalSyncError(Object error) {
     final errorString = error.toString();
     if (errorString.contains('invalid') || errorString.contains('410')) {
-      return const Left(ServerFailure());
+      return Left(ServerFailure(_serverFailureMessage));
     }
-    return const Left(NetworkFailure());
+    return Left(NetworkFailure(_networkFailureMessage));
   }
 
   /// Convert Google Calendar Event to domain CalendarEvent
@@ -352,7 +363,7 @@ class CalendarSyncService {
       title: event.summary ?? 'Untitled Event',
       description: event.description ?? '',
       startTime: event.start?.dateTime ?? DateTime.now(),
-      endTime: event.end?.dateTime ?? DateTime.now().add(const Duration(hours: 1)),
+      endTime: event.end?.dateTime ?? DateTime.now().add(_defaultEventDuration),
       isAllDay: event.start?.date != null,
     );
   }
