@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
+import 'package:planning/src/core/auth/google_auth_service.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
 
@@ -13,9 +14,11 @@ import 'package:planning/src/features/calendar/domain/entities/calendar_event.da
 /// and token management for efficient calendar data synchronization.
 /// 
 /// REFACTORED: Enhanced with constants, extracted error handling, and improved architecture
+/// INTEGRATED: Now supports GoogleAuthService integration for centralized authentication
 class CalendarSyncService {
-  final GoogleSignIn googleSignIn;
-  final calendar.CalendarApi calendarApi;
+  final GoogleSignIn? googleSignIn;
+  final calendar.CalendarApi? calendarApi;
+  final GoogleAuthService? authService;
   
   /// Storage for sync token to enable incremental synchronization
   String? _syncToken;
@@ -29,18 +32,43 @@ class CalendarSyncService {
   static const int _defaultSyncRangeDays = 30;
   static const int _defaultFutureRangeDays = 365;
 
+  /// Constructor for direct GoogleSignIn and CalendarApi usage (legacy)
   CalendarSyncService({
     required this.googleSignIn,
     required this.calendarApi,
-  });
+  }) : authService = null;
+
+  /// Constructor for GoogleAuthService integration (new pattern)
+  CalendarSyncService.withAuthService({
+    required GoogleAuthService authService,
+  }) : googleSignIn = null, 
+       calendarApi = null,
+       authService = authService;
 
   /// Authenticate with Google and request calendar access
   /// 
   /// Returns [Right] with [true] on successful authentication,
   /// or [Left] with [AuthFailure] on authentication failure.
   Future<Either<Failure, bool>> authenticate() async {
+    // Use GoogleAuthService if available (new pattern)
+    if (authService != null) {
+      final signInResult = await authService!.signIn(scopes: [_calendarScope]);
+      if (signInResult.isLeft()) {
+        return signInResult;
+      }
+      
+      // Get Calendar API instance to validate access
+      final apiResult = await authService!.getCalendarApi();
+      if (apiResult.isLeft()) {
+        return Left(apiResult.fold((l) => l, (r) => const AuthFailure()));
+      }
+      
+      return const Right(true);
+    }
+    
+    // Legacy direct GoogleSignIn approach
     try {
-      final account = await googleSignIn.signIn();
+      final account = await googleSignIn!.signIn();
       if (account == null) {
         return const Left(AuthFailure());
       }
@@ -50,7 +78,7 @@ class CalendarSyncService {
         return const Left(AuthFailure());
       }
 
-      final scopeGranted = await googleSignIn.requestScopes([_calendarScope]);
+      final scopeGranted = await googleSignIn!.requestScopes([_calendarScope]);
       
       if (!scopeGranted) {
         return const Left(AuthFailure());
@@ -65,18 +93,103 @@ class CalendarSyncService {
   /// Check if user is currently authenticated
   /// 
   /// Returns [true] if user is signed in and has valid token.
-  Future<bool> isAuthenticated() async {
+  bool isAuthenticated() {
+    // Use GoogleAuthService if available (new pattern)
+    if (authService != null) {
+      return authService!.isSignedIn();
+    }
+    
+    // Legacy approach
+    return googleSignIn!.currentUser != null;
+  }
+
+  /// Sign out from Google
+  /// 
+  /// Returns [Right] with [true] on successful sign out,
+  /// or [Left] with [AuthFailure] on failure.
+  Future<Either<Failure, bool>> signOut() async {
+    // Use GoogleAuthService if available (new pattern)
+    if (authService != null) {
+      return await authService!.signOut();
+    }
+    
+    // Legacy approach
     try {
-      final isSignedIn = await googleSignIn.isSignedIn();
-      if (!isSignedIn) return false;
-
-      final user = googleSignIn.currentUser;
-      if (user == null) return false;
-
-      final auth = await user.authentication;
-      return auth.accessToken != null;
+      await googleSignIn!.signOut();
+      return const Right(true);
     } catch (e) {
-      return false;
+      return const Left(AuthFailure());
+    }
+  }
+
+  /// Sync events from Google Calendar
+  /// 
+  /// Returns [Right] with list of [CalendarEvent] on success,
+  /// or [Left] with [Failure] on error.
+  Future<Either<Failure, List<CalendarEvent>>> syncEvents() async {
+    // Check authentication first
+    if (!isAuthenticated()) {
+      return const Left(AuthFailure());
+    }
+
+    try {
+      late calendar.CalendarApi api;
+      
+      // Get Calendar API instance
+      if (authService != null) {
+        final apiResult = await authService!.getCalendarApi();
+        if (apiResult.isLeft()) {
+          return Left(apiResult.fold((l) => l, (r) => const AuthFailure()));
+        }
+        api = apiResult.fold((l) => throw Exception(), (r) => r);
+      } else {
+        api = calendarApi!;
+      }
+
+      // Sync events using the API
+      final now = DateTime.now();
+      final timeMin = now.subtract(const Duration(days: _defaultSyncRangeDays));
+      final timeMax = now.add(const Duration(days: _defaultFutureRangeDays));
+
+      final events = await api.events.list(
+        _primaryCalendarId,
+        timeMin: timeMin,
+        timeMax: timeMax,
+        singleEvents: true,
+        orderBy: 'startTime',
+      );
+
+      final calendarEvents = <CalendarEvent>[];
+      if (events.items != null) {
+        for (final event in events.items!) {
+          if (event.id != null && event.summary != null) {
+            calendarEvents.add(CalendarEvent(
+              id: event.id!,
+              title: event.summary!,
+              description: event.description ?? '',
+              startTime: event.start?.dateTime ?? DateTime.now(),
+              endTime: event.end?.dateTime ?? DateTime.now().add(const Duration(hours: 1)),
+              isAllDay: event.start?.date != null, // All-day if date without time
+            ));
+          }
+        }
+      }
+
+      return Right(calendarEvents);
+    } catch (e) {
+      // Handle token refresh scenario - but avoid infinite recursion
+      if (authService != null) {
+        try {
+          final apiResult = await authService!.getCalendarApi();
+          if (apiResult.isRight()) {
+            // Token was refreshed, but don't retry automatically to avoid infinite recursion
+            return const Left(ServerFailure('Token refresh required - please retry sync'));
+          }
+        } catch (_) {
+          // Ignore refresh attempt error
+        }
+      }
+      return const Left(ServerFailure('Calendar sync failed'));
     }
   }
 
@@ -86,7 +199,7 @@ class CalendarSyncService {
   /// or [Left] with [AuthFailure] on failure.
   Future<Either<Failure, bool>> refreshToken() async {
     try {
-      final account = await googleSignIn.signInSilently();
+      final account = await googleSignIn!.signInSilently();
       if (account == null) {
         return const Left(AuthFailure());
       }
@@ -108,7 +221,7 @@ class CalendarSyncService {
   /// or [Left] with [Failure] on error.
   Future<Either<Failure, List<CalendarEvent>>> performFullSync() async {
     try {
-      final events = calendarApi.events;
+      final events = calendarApi!.events;
       final eventsList = await events.list(
         _primaryCalendarId,
         timeMin: _getDefaultStartTime(),
@@ -138,7 +251,7 @@ class CalendarSyncService {
   /// or [Left] with [Failure] on error.
   Future<Either<Failure, List<CalendarEvent>>> performIncrementalSync(String syncToken) async {
     try {
-      final events = calendarApi.events;
+      final events = calendarApi!.events;
       final eventsList = await events.list(
         _primaryCalendarId,
         syncToken: syncToken,
