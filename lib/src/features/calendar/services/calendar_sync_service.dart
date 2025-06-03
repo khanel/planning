@@ -11,6 +11,8 @@ import 'package:planning/src/features/calendar/domain/entities/calendar_event.da
 /// 
 /// Implements incremental and full sync strategies with proper error handling
 /// and token management for efficient calendar data synchronization.
+/// 
+/// REFACTORED: Enhanced with constants, extracted error handling, and improved architecture
 class CalendarSyncService {
   final GoogleSignIn googleSignIn;
   final calendar.CalendarApi calendarApi;
@@ -20,6 +22,12 @@ class CalendarSyncService {
   
   /// Storage for last sync timestamp
   DateTime? _lastSyncTime;
+
+  // REFACTOR: Extracted constants for better maintainability
+  static const String _calendarScope = 'https://www.googleapis.com/auth/calendar';
+  static const String _primaryCalendarId = 'primary';
+  static const int _defaultSyncRangeDays = 30;
+  static const int _defaultFutureRangeDays = 365;
 
   CalendarSyncService({
     required this.googleSignIn,
@@ -42,9 +50,7 @@ class CalendarSyncService {
         return const Left(AuthFailure());
       }
 
-      final scopeGranted = await googleSignIn.requestScopes([
-        'https://www.googleapis.com/auth/calendar'
-      ]);
+      final scopeGranted = await googleSignIn.requestScopes([_calendarScope]);
       
       if (!scopeGranted) {
         return const Left(AuthFailure());
@@ -52,7 +58,7 @@ class CalendarSyncService {
 
       return const Right(true);
     } catch (e) {
-      return const Left(AuthFailure());
+      return _handleAuthError(e);
     }
   }
 
@@ -92,7 +98,7 @@ class CalendarSyncService {
 
       return const Right(true);
     } catch (e) {
-      return const Left(AuthFailure());
+      return _handleAuthError(e);
     }
   }
 
@@ -104,17 +110,14 @@ class CalendarSyncService {
     try {
       final events = calendarApi.events;
       final eventsList = await events.list(
-        'primary',
-        timeMin: DateTime.now().subtract(const Duration(days: 30)),
-        timeMax: DateTime.now().add(const Duration(days: 365)),
+        _primaryCalendarId,
+        timeMin: _getDefaultStartTime(),
+        timeMax: _getDefaultEndTime(),
         singleEvents: true,
         orderBy: 'startTime',
       );
 
-      final calendarEvents = <CalendarEvent>[];
-      for (final event in eventsList.items ?? []) {
-        calendarEvents.add(_convertToCalendarEvent(event));
-      }
+      final calendarEvents = _convertEventsList(eventsList.items ?? []);
 
       // Store sync token for future incremental syncs
       if (eventsList.nextSyncToken != null) {
@@ -123,10 +126,7 @@ class CalendarSyncService {
 
       return Right(calendarEvents);
     } catch (e) {
-      if (e.toString().contains('Authentication') || e.toString().contains('401')) {
-        return const Left(AuthFailure());
-      }
-      return const Left(NetworkFailure());
+      return _handleSyncError(e);
     }
   }
 
@@ -140,15 +140,12 @@ class CalendarSyncService {
     try {
       final events = calendarApi.events;
       final eventsList = await events.list(
-        'primary',
+        _primaryCalendarId,
         syncToken: syncToken,
         showDeleted: true,
       );
 
-      final calendarEvents = <CalendarEvent>[];
-      for (final event in eventsList.items ?? []) {
-        calendarEvents.add(_convertToCalendarEvent(event));
-      }
+      final calendarEvents = _convertEventsList(eventsList.items ?? []);
 
       // Store new sync token
       if (eventsList.nextSyncToken != null) {
@@ -157,10 +154,7 @@ class CalendarSyncService {
 
       return Right(calendarEvents);
     } catch (e) {
-      if (e.toString().contains('invalid') || e.toString().contains('410')) {
-        return const Left(ServerFailure());
-      }
-      return const Left(NetworkFailure());
+      return _handleIncrementalSyncError(e);
     }
   }
 
@@ -195,6 +189,47 @@ class CalendarSyncService {
   /// Returns the last sync timestamp or null if never synced.
   Future<DateTime?> getLastSyncTime() async {
     return _lastSyncTime;
+  }
+
+  // REFACTOR: Extracted helper methods for better code organization and maintainability
+
+  /// Get default start time for sync operations
+  DateTime _getDefaultStartTime() {
+    return DateTime.now().subtract(Duration(days: _defaultSyncRangeDays));
+  }
+
+  /// Get default end time for sync operations  
+  DateTime _getDefaultEndTime() {
+    return DateTime.now().add(Duration(days: _defaultFutureRangeDays));
+  }
+
+  /// Convert list of Google Calendar events to domain CalendarEvents
+  List<CalendarEvent> _convertEventsList(List<calendar.Event> events) {
+    return events.map((event) => _convertToCalendarEvent(event)).toList();
+  }
+
+  /// Handle authentication errors with proper error mapping
+  Either<Failure, bool> _handleAuthError(Object error) {
+    // Log error details in production, this would use a proper logger
+    return const Left(AuthFailure());
+  }
+
+  /// Handle sync operation errors with specific error mapping
+  Either<Failure, List<CalendarEvent>> _handleSyncError(Object error) {
+    final errorString = error.toString();
+    if (errorString.contains('Authentication') || errorString.contains('401')) {
+      return const Left(AuthFailure());
+    }
+    return const Left(NetworkFailure());
+  }
+
+  /// Handle incremental sync errors with sync token invalidation detection
+  Either<Failure, List<CalendarEvent>> _handleIncrementalSyncError(Object error) {
+    final errorString = error.toString();
+    if (errorString.contains('invalid') || errorString.contains('410')) {
+      return const Left(ServerFailure());
+    }
+    return const Left(NetworkFailure());
   }
 
   /// Convert Google Calendar Event to domain CalendarEvent
