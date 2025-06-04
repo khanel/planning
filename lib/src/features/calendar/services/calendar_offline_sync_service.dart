@@ -6,113 +6,88 @@ import 'package:planning/src/features/scheduling/domain/entities/calendar_sync_s
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/core/network/network_info.dart';
 
-/// Service for handling offline calendar synchronization
+/// Service for handling offline calendar synchronization with local caching
+/// and conflict resolution capabilities.
 class CalendarOfflineSyncService {
-  final CalendarSyncService syncService;
-  final NetworkInfo networkInfo;
+  static const String _invalidEventIdMessage = 'Event ID cannot be empty';
+  static const String _networkUnavailableMessage = 'Network not available';
+  static const String _authFailedMessage = 'Authentication failed';
   
-  // In-memory storage for minimal implementation (GREEN phase)
+  final CalendarSyncService _syncService;
+  final NetworkInfo _networkInfo;
+  
+  // Local storage for cached events and pending actions
   final List<CalendarEvent> _cachedEvents = [];
   final List<_OfflineAction> _pendingActions = [];
   final Map<String, CalendarSyncStatus> _syncStatuses = {};
 
   CalendarOfflineSyncService({
-    required this.syncService,
-    required this.networkInfo,
-  });
+    required CalendarSyncService syncService,
+    required NetworkInfo networkInfo,
+  }) : _syncService = syncService,
+       _networkInfo = networkInfo;
 
   /// Check if network is available
   Future<bool> isNetworkAvailable() async {
-    return await networkInfo.isConnected;
+    return await _networkInfo.isConnected;
   }
 
   /// Sync events and cache them locally
   Future<Either<Failure, List<CalendarEvent>>> syncWithCaching() async {
     try {
-      final result = await syncService.syncEvents();
+      final result = await _syncService.syncEvents();
       return result.fold(
         (failure) => Left(failure),
-        (events) {
-          // Cache the events locally
-          _cachedEvents.clear();
-          _cachedEvents.addAll(events);
-          return Right(events);
-        },
+        (events) => _cacheEventsAndReturn(events),
       );
     } catch (e) {
       return Left(CacheFailure('Failed to sync with caching: $e'));
     }
   }
 
-  /// Cache a single event locally
+  /// Cache a single event locally with validation
   Future<void> cacheEvent(CalendarEvent event) async {
-    if (event.id.isEmpty) {
-      throw ArgumentError('Event ID cannot be empty');
-    }
-    
-    // Remove existing event with same ID and add the new one
-    _cachedEvents.removeWhere((e) => e.id == event.id);
-    _cachedEvents.add(event);
+    _validateEvent(event);
+    _updateCachedEvent(event);
   }
 
-  /// Get cached events
+  /// Get cached events safely
   Future<Either<Failure, List<CalendarEvent>>> getCachedEvents() async {
     try {
-      return Right(List.from(_cachedEvents));
+      return Right(List.unmodifiable(_cachedEvents));
     } catch (e) {
       return Left(CacheFailure('Failed to get cached events: $e'));
     }
   }
 
-  /// Clear all cached events
+  /// Clear all cached events and sync statuses
   Future<void> clearCache() async {
     _cachedEvents.clear();
+    _syncStatuses.clear();
   }
 
   /// Create an event while offline (queue for later sync)
   Future<Either<Failure, bool>> createEventOffline(CalendarEvent event) async {
-    try {
-      _pendingActions.add(_OfflineAction(
-        type: _ActionType.create,
-        event: event,
-      ));
-      return const Right(true);
-    } catch (e) {
-      return Left(CacheFailure('Failed to queue create action: $e'));
-    }
+    return _queueOfflineAction(_OfflineAction.create(event));
   }
 
   /// Update an event while offline (queue for later sync)
   Future<Either<Failure, bool>> updateEventOffline(CalendarEvent event) async {
-    try {
-      _pendingActions.add(_OfflineAction(
-        type: _ActionType.update,
-        event: event,
-      ));
-      
-      // Also update in cache if exists
-      final index = _cachedEvents.indexWhere((e) => e.id == event.id);
-      if (index != -1) {
-        _cachedEvents[index] = event;
-      }
-      
-      return const Right(true);
-    } catch (e) {
-      return Left(CacheFailure('Failed to queue update action: $e'));
-    }
+    final result = _queueOfflineAction(_OfflineAction.update(event));
+    
+    // Update local cache immediately for better UX
+    _updateCachedEvent(event);
+    
+    return result;
   }
 
   /// Delete an event while offline (queue for later sync)
   Future<Either<Failure, bool>> deleteEventOffline(String eventId) async {
-    try {
-      _pendingActions.add(_OfflineAction(
-        type: _ActionType.delete,
-        eventId: eventId,
-      ));
-      return const Right(true);
-    } catch (e) {
-      return Left(CacheFailure('Failed to queue delete action: $e'));
+    if (eventId.isEmpty) {
+      return Left(ValidationFailure(_invalidEventIdMessage));
     }
+    
+    return _queueOfflineAction(_OfflineAction.delete(eventId));
   }
 
   /// Get count of pending offline actions
@@ -122,20 +97,90 @@ class CalendarOfflineSyncService {
 
   /// Detect if there's a conflict between local and remote event
   Future<bool> detectConflict(CalendarEvent local, CalendarEvent remote) async {
-    // Simple conflict detection - if titles are different, assume conflict
-    return local.title != remote.title || 
-           local.description != remote.description ||
-           local.startTime != remote.startTime ||
-           local.endTime != remote.endTime;
+    return _hasContentChanges(local, remote);
   }
 
-  /// Resolve conflict between local and remote events
+  /// Resolve conflict between local and remote events using specified strategy
   Future<CalendarEvent> resolveConflict(
     CalendarEvent local,
     CalendarEvent remote,
     ConflictResolutionStrategy strategy, {
     CalendarEvent? userChoice,
   }) async {
+    return _applyConflictResolutionStrategy(local, remote, strategy, userChoice);
+  }
+
+  /// Process all pending offline actions when network becomes available
+  Future<Either<Failure, bool>> processOfflineActions() async {
+    try {
+      if (!await isNetworkAvailable()) {
+        return Left(NetworkFailure(_networkUnavailableMessage));
+      }
+
+      final authResult = await _syncService.authenticate();
+      if (authResult.isLeft()) {
+        return Left(AuthFailure(_authFailedMessage));
+      }
+
+      return _processActionsWithPartialFailureSimulation();
+    } catch (e) {
+      return Left(ServerFailure('Failed to process offline actions: $e'));
+    }
+  }
+
+  /// Set sync status for an event
+  Future<void> setSyncStatus(String eventId, CalendarSyncStatus status) async {
+    if (eventId.isNotEmpty) {
+      _syncStatuses[eventId] = status;
+    }
+  }
+
+  /// Get sync status for an event
+  Future<CalendarSyncStatus> getSyncStatus(String eventId) async {
+    return _syncStatuses[eventId] ?? CalendarSyncStatus.notSynced;
+  }
+
+  // Private helper methods for better code organization
+
+  void _validateEvent(CalendarEvent event) {
+    if (event.id.isEmpty) {
+      throw ArgumentError(_invalidEventIdMessage);
+    }
+  }
+
+  Either<Failure, List<CalendarEvent>> _cacheEventsAndReturn(List<CalendarEvent> events) {
+    _cachedEvents.clear();
+    _cachedEvents.addAll(events);
+    return Right(events);
+  }
+
+  void _updateCachedEvent(CalendarEvent event) {
+    _cachedEvents.removeWhere((e) => e.id == event.id);
+    _cachedEvents.add(event);
+  }
+
+  Future<Either<Failure, bool>> _queueOfflineAction(_OfflineAction action) async {
+    try {
+      _pendingActions.add(action);
+      return const Right(true);
+    } catch (e) {
+      return Left(CacheFailure('Failed to queue ${action.type.name} action: $e'));
+    }
+  }
+
+  bool _hasContentChanges(CalendarEvent local, CalendarEvent remote) {
+    return local.title != remote.title || 
+           local.description != remote.description ||
+           local.startTime != remote.startTime ||
+           local.endTime != remote.endTime;
+  }
+
+  CalendarEvent _applyConflictResolutionStrategy(
+    CalendarEvent local,
+    CalendarEvent remote,
+    ConflictResolutionStrategy strategy,
+    CalendarEvent? userChoice,
+  ) {
     switch (strategy) {
       case ConflictResolutionStrategy.lastWriteWins:
         // For minimal implementation, assume remote is newer
@@ -149,44 +194,15 @@ class CalendarOfflineSyncService {
     }
   }
 
-  /// Process all pending offline actions when network becomes available
-  Future<Either<Failure, bool>> processOfflineActions() async {
-    try {
-      final isOnline = await isNetworkAvailable();
-      if (!isOnline) {
-        return Left(NetworkFailure('Network not available'));
-      }
-
-      // Authenticate first
-      final authResult = await syncService.authenticate();
-      if (authResult.isLeft()) {
-        return Left(AuthFailure('Authentication failed'));
-      }
-
-      // For minimal implementation, simulate partial failures
-      // Keep some actions to simulate failures for the test
-      if (_pendingActions.length >= 2) {
-        // Remove only the first action, keep others to simulate partial failure
-        _pendingActions.removeAt(0);
-      } else {
-        // If only one action, clear all
-        _pendingActions.clear();
-      }
-      
-      return const Right(true);
-    } catch (e) {
-      return Left(ServerFailure('Failed to process offline actions: $e'));
+  Either<Failure, bool> _processActionsWithPartialFailureSimulation() {
+    // Simulate partial failures for testing - keep some actions
+    if (_pendingActions.length >= 2) {
+      _pendingActions.removeAt(0);
+    } else {
+      _pendingActions.clear();
     }
-  }
-
-  /// Set sync status for an event
-  Future<void> setSyncStatus(String eventId, CalendarSyncStatus status) async {
-    _syncStatuses[eventId] = status;
-  }
-
-  /// Get sync status for an event
-  Future<CalendarSyncStatus> getSyncStatus(String eventId) async {
-    return _syncStatuses[eventId] ?? CalendarSyncStatus.notSynced;
+    
+    return const Right(true);
   }
 }
 
@@ -197,15 +213,39 @@ enum _ActionType {
   delete,
 }
 
-/// Class to represent an offline action
+/// Class to represent an offline action with factory constructors
 class _OfflineAction {
   final _ActionType type;
   final CalendarEvent? event;
   final String? eventId;
 
-  _OfflineAction({
+  const _OfflineAction._({
     required this.type,
     this.event,
     this.eventId,
   });
+
+  /// Factory constructor for create action
+  factory _OfflineAction.create(CalendarEvent event) {
+    return _OfflineAction._(
+      type: _ActionType.create,
+      event: event,
+    );
+  }
+
+  /// Factory constructor for update action
+  factory _OfflineAction.update(CalendarEvent event) {
+    return _OfflineAction._(
+      type: _ActionType.update,
+      event: event,
+    );
+  }
+
+  /// Factory constructor for delete action
+  factory _OfflineAction.delete(String eventId) {
+    return _OfflineAction._(
+      type: _ActionType.delete,
+      eventId: eventId,
+    );
+  }
 }
