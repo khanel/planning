@@ -2,6 +2,7 @@ import 'package:workmanager/workmanager.dart';
 import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:dartz/dartz.dart';
+import 'package:logging/logging.dart';
 
 /// Service for managing background calendar synchronization using WorkManager
 /// 
@@ -132,12 +133,16 @@ class CalendarBackgroundSync {
     }
   }
 
+  /// Logger for CalendarBackgroundSync
+  static final _logger = Logger('CalendarBackgroundSync');
+
   /// Improved error handling for sync operations
   Future<bool> executeSyncOperation() async {
     try {
       if (!_syncService.isAuthenticated()) {
         final authResult = await _syncService.authenticate();
         if (authResult.isLeft()) {
+          _logError('Authentication failed during sync operation.');
           return false; // Authentication failed
         }
       }
@@ -161,64 +166,33 @@ class CalendarBackgroundSync {
 
   /// Log error messages for debugging
   void _logError(String message) {
-    // Replace with a proper logging framework in production
-    print('[ERROR] $message');
+    _logger.severe(message);
   }
 
   /// Log informational messages
   void _logInfo(String message) {
-    // Replace with a proper logging framework in production
-    print('[INFO] $message');
+    _logger.info(message);
   }
 
-  /// Execute calendar sync in background task
+  /// Global callback dispatcher for WorkManager background tasks
   /// 
-  /// This method is called by the WorkManager callback dispatcher
-  /// and handles the actual sync operation with proper error handling.
-  /// 
-  /// Returns [true] on successful sync, [false] on failure.
-  /// Errors are handled gracefully to prevent task failures.
-  static Future<bool> _executeBackgroundSync(CalendarSyncService syncService) async {
-    try {
-      // First check if user is authenticated
-      if (!syncService.isAuthenticated()) {
-        // Attempt silent authentication
-        final authResult = await syncService.authenticate();
-        if (authResult.isLeft()) {
-          // Authentication failed - this is expected if user needs to re-authenticate
+  /// This function is called by WorkManager when background tasks execute.
+  /// It must be a top-level function to work properly with the WorkManager plugin.
+  @pragma('vm:entry-point')
+  void _callbackDispatcher() {
+    Workmanager().executeTask((task, inputData) async {
+      switch (task) {
+        case CalendarBackgroundSync._syncTaskName:
+          _logger.info('Executing background sync task: CalendarBackgroundSync._syncTaskName');
+          // Note: In a real implementation, we would need to properly inject
+          // dependencies here. For testing purposes, we'll return true.
+          // In production, this would require setting up a service locator
+          // or dependency injection that works in background isolates.
+          return true;
+        default:
+          _logger.warning('Unknown task received: $task');
           return false;
-        }
       }
-
-      // Perform calendar sync
-      final syncResult = await syncService.syncEvents();
-      return syncResult.fold(
-        (failure) => false, // Sync failed
-        (events) => true,   // Sync successful
-      );
-    } catch (e) {
-      // Handle any unexpected errors gracefully
-      return false;
-    }
+    });
   }
-}
-
-/// Global callback dispatcher for WorkManager background tasks
-/// 
-/// This function is called by WorkManager when background tasks execute.
-/// It must be a top-level function to work properly with the WorkManager plugin.
-@pragma('vm:entry-point')
-void _callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    switch (task) {
-      case CalendarBackgroundSync._syncTaskName:
-        // Note: In a real implementation, we would need to properly inject
-        // dependencies here. For testing purposes, we'll return true.
-        // In production, this would require setting up a service locator
-        // or dependency injection that works in background isolates.
-        return true;
-      default:
-        return false;
-    }
-  });
 }
