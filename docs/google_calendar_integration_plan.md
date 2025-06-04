@@ -56,6 +56,7 @@ This document provides a comprehensive implementation plan for integrating Googl
     - ✅ **NEW**: CalendarOfflineSyncService offline support TDD cycle (RED→GREEN→REFACTOR)
     - ✅ **NEW**: PlatformOAuthConfig platform-specific OAuth TDD cycle (RED→GREEN→REFACTOR)
     - ✅ **NEW**: CalendarLocalDataSource persistent storage TDD cycle (RED→GREEN→REFACTOR)
+    - ✅ **NEW**: CalendarBackgroundSync WorkManager integration TDD cycle (RED→GREEN→REFACTOR)
   - Comprehensive test coverage for all CRUD operations ✅
   - Proper mocktail setup with fallback values ✅
   - **NEW**: Offline sync capabilities with local caching and conflict resolution ✅
@@ -71,9 +72,19 @@ This document provides a comprehensive implementation plan for integrating Googl
   - **COMPLETED**: Event caching, update, delete, and retrieval operations ✅
   - **COMPLETED**: Sync status tracking with enum support ✅
   - **COMPLETED**: All 413 calendar tests passing ✅
+- **Background Sync**:
+  - **COMPLETED**: `CalendarBackgroundSync` with WorkManager integration ✅
+  - **COMPLETED**: Complete TDD cycle (RED→GREEN→REFACTOR) for background sync ✅
+  - **COMPLETED**: Periodic and one-time sync task registration ✅
+  - **COMPLETED**: Platform channel exception handling for test environments ✅
+  - **COMPLETED**: Authentication flow integration for background tasks ✅
+  - **COMPLETED**: Structured logging with the `logging` package ✅
+  - **COMPLETED**: Network connectivity constraints for background tasks ✅
+  - **COMPLETED**: Task cancellation and management capabilities ✅
+  - **COMPLETED**: Dependency injection setup for background sync services ✅
 
 ### 🔄 IN PROGRESS (Next Priority)
-- **Background Sync**: Workmanager integration for automatic synchronization
+- **Enhanced Error Handling**: Advanced retry mechanisms and offline-first strategies
 
 ### ❌ PENDING (Future Iterations)
 - **Error Handling**: Enhanced error scenarios and recovery patterns
@@ -84,10 +95,10 @@ This document provides a comprehensive implementation plan for integrating Googl
 - **Production**: App Store/Play Store OAuth verification setup
 
 ### 📋 NEXT IMMEDIATE STEPS
-1. **Background Sync**: Add WorkManager for automatic sync when network available
-2. **Enhanced Error Handling**: Implement retry mechanisms and offline-first strategies
-3. **Production Deployment**: Set up OAuth client credentials for app stores with completed platform configuration
-4. **Performance Optimization**: Implement advanced caching strategies and sync optimizations
+1. **Enhanced Error Handling**: Implement retry mechanisms and offline-first strategies
+2. **Production Deployment**: Set up OAuth client credentials for app stores with completed platform configuration
+3. **Performance Optimization**: Implement advanced caching strategies and sync optimizations
+4. **UI Integration**: Connect background sync service with user interface components
 
 ---
 
@@ -636,6 +647,93 @@ class CalendarOfflineSyncService {
 - ✅ **Sync Strategies**: Both full and incremental synchronization patterns
 - ✅ **Code Quality**: Extracted methods, improved documentation, maintainable structure
 
+### 7.3 Background Sync Implementation
+
+```dart
+/// COMPLETED: CalendarBackgroundSync Implementation ✅
+/// 
+/// Full TDD cycle completed (June 4, 2025) with comprehensive 
+/// WorkManager integration, structured logging, and robust error handling.
+class CalendarBackgroundSync {
+  final CalendarSyncService _syncService;
+  
+  // WorkManager task configuration
+  static const String _periodicSyncTaskName = 'periodic_calendar_sync';
+  static const String _oneTimeSyncTaskName = 'one_time_calendar_sync';
+  static const Duration _periodicSyncFrequency = Duration(hours: 1);
+  static const String _syncTaskTag = 'calendar_sync';
+
+  /// Initialize WorkManager for background processing
+  Future<void> initialize() async {
+    await Workmanager().initialize(_callbackDispatcher);
+  }
+
+  /// Register periodic background sync (hourly when network available)
+  Future<Either<Failure, bool>> registerPeriodicSync() async {
+    try {
+      await Workmanager().registerPeriodicTask(
+        _periodicSyncTaskName,
+        _syncTaskName,
+        frequency: _periodicSyncFrequency,
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+        ),
+      );
+      return const Right(true);
+    } catch (e) {
+      return Left(ServerFailure('Failed to register background sync'));
+    }
+  }
+
+  /// Execute sync operation with authentication handling
+  Future<bool> executeSyncOperation() async {
+    try {
+      // Handle authentication flow
+      if (!_syncService.isAuthenticated()) {
+        final authResult = await _syncService.authenticate();
+        if (authResult.isLeft()) {
+          _logger.severe('Authentication failed during sync operation');
+          return false;
+        }
+      }
+
+      // Perform calendar synchronization
+      final syncResult = await _syncService.syncEvents();
+      return syncResult.fold(
+        (failure) {
+          _logger.severe('Sync failed: ${failure.runtimeType}');
+          return false;
+        },
+        (events) {
+          _logger.info('Sync successful: ${events.length} events synchronized');
+          return true;
+        },
+      );
+    } catch (e) {
+      _logger.severe('Unexpected error during sync: $e');
+      return false;
+    }
+  }
+
+  /// Task cancellation management
+  Future<void> cancelAllSyncTasks() async {
+    await Workmanager().cancelByTag(_syncTaskTag);
+  }
+}
+```
+
+**Implementation Highlights:**
+- ✅ **WorkManager Integration**: Periodic and one-time task scheduling with network constraints
+- ✅ **Authentication Flow**: Automatic authentication handling in background context
+- ✅ **Error Resilience**: Comprehensive exception handling with structured logging
+- ✅ **Platform Support**: Graceful handling of platform channel exceptions in test environments
+- ✅ **Task Management**: Registration, execution, and cancellation of background sync tasks
+- ✅ **Logging Integration**: Structured logging using the `logging` package for debugging and monitoring
+- ✅ **Network Awareness**: Background tasks only execute when network connectivity is available
+- ✅ **Battery Optimization**: Tasks respect battery-low constraints to preserve device performance
+- ✅ **Dependency Injection**: Proper service registration for background sync components
+
 ## 8. Error Handling & Resilience
 
 ### 8.1 Common Error Scenarios
@@ -1146,7 +1244,9 @@ This implementation plan provides a comprehensive foundation for secure, scalabl
 
 **Successfully Completed (June 2025):**
 - **GoogleCalendarDatasource TDD Cycle**: Complete RED→GREEN→REFACTOR implementation
-- **CalendarSyncService TDD Cycle**: Complete OAuth authentication and sync service implementation
+- **CalendarSyncService TDD Cycle**: Complete OAuth authentication and sync service implementation  
+- **CalendarOfflineSyncService TDD Cycle**: Complete offline support with caching and conflict resolution
+- **CalendarBackgroundSync TDD Cycle**: Complete WorkManager integration with background task management
 - **Production-Ready Code**: Enhanced error handling, custom exceptions, and robust data conversion
 - **Comprehensive Testing**: Combined 25+ test cases covering all CRUD operations and sync scenarios
 - **Clean Architecture**: Proper separation of concerns with domain entities and service abstractions
@@ -1178,8 +1278,19 @@ This implementation plan provides a comprehensive foundation for secure, scalabl
 - ✅ **Data Integrity**: Validation and referential integrity maintenance during offline operations
 - ✅ **Factory Patterns**: Type-safe action creation with proper encapsulation
 
-**Next Phase Ready**: All core service layers (datasource, sync, offline sync) are production-ready. The next iteration should focus on platform-specific OAuth configuration and persistent storage integration.
+**CalendarBackgroundSync Highlights (NEW):**
+- ✅ **WorkManager Integration**: Periodic and one-time background task scheduling with proper constraints
+- ✅ **Authentication Management**: Seamless authentication flow handling in background context
+- ✅ **Error Resilience**: Comprehensive exception handling with structured logging using `logging` package
+- ✅ **Platform Compatibility**: Graceful handling of platform channel exceptions in test environments
+- ✅ **Network Optimization**: Background tasks only execute when network connectivity is available
+- ✅ **Battery Awareness**: Respects device battery constraints to optimize performance
+- ✅ **Task Management**: Complete lifecycle management (registration, execution, cancellation)
+- ✅ **Logging Integration**: Structured logging for debugging, monitoring, and production support
+- ✅ **Dependency Injection**: Proper service registration for background sync components
+
+**Next Phase Ready**: All core service layers (datasource, sync, offline sync, background sync) are production-ready. The next iteration should focus on enhanced error handling with retry mechanisms and UI integration.
 
 Regular updates to this plan should be made as Google's APIs and security requirements evolve. Monitor the [Google Developers Blog](https://developers.googleblog.com/) and [Workspace API updates](https://developers.google.com/workspace/releases) for the latest changes.
 
-**Last Updated**: June 4, 2025 - CalendarOfflineSyncService TDD cycle completion
+**Last Updated**: June 4, 2025 - CalendarBackgroundSync TDD cycle completion with WorkManager integration
