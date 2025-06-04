@@ -5,6 +5,8 @@ import 'package:planning/src/features/calendar/data/repositories/calendar_reposi
 import 'package:planning/src/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:planning/src/features/calendar/services/calendar_integration_service.dart';
 import 'package:planning/src/features/calendar/services/session_aware_calendar_service.dart';
+import 'package:planning/src/features/calendar/services/calendar_background_sync.dart';
+import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
 import 'package:planning/src/core/auth/google_auth_service.dart';
 
 /// Dependency injection module for calendar feature
@@ -46,4 +48,20 @@ abstract class CalendarDependencyInjection {
   @lazySingleton
   SessionAwareCalendarService sessionAwareCalendarService() =>
       SessionAwareCalendarService(authService: sl<GoogleAuthService>());
+
+  /// Calendar sync service
+  /// 
+  /// Provides OAuth authentication, token management, and calendar
+  /// synchronization capabilities with Google Calendar API.
+  @lazySingleton
+  CalendarSyncService calendarSyncService() =>
+      CalendarSyncService.withAuthService(authService: sl<GoogleAuthService>());
+
+  /// Calendar background sync service
+  /// 
+  /// Manages background synchronization of calendar events using WorkManager.
+  /// Requires CalendarSyncService for executing sync operations.
+  @lazySingleton
+  CalendarBackgroundSync calendarBackgroundSync() =>
+      CalendarBackgroundSync(syncService: sl<CalendarSyncService>());
 }
