@@ -67,3 +67,12 @@ class SyncFailure extends Failure {
   @override
   List<Object?> get props => [message];
 }
+
+class PlatformConfigFailure extends Failure {
+  final String message;
+  
+  const PlatformConfigFailure([this.message = 'Platform configuration failed']);
+  
+  @override
+  List<Object?> get props => [message];
+}
