@@ -3,11 +3,13 @@
 /// This model is specifically designed for Hive database storage and includes
 /// all necessary properties for calendar event persistence and synchronization.
 
+import 'package:hive/hive.dart';
 import 'package:planning/src/features/scheduling/domain/entities/calendar_sync_status.dart';
 
-class CalendarEventDataModel {
+@HiveType(typeId: 0)
+class CalendarEventDataModel extends HiveObject {
   /// Creates a new CalendarEventDataModel instance.
-  const CalendarEventDataModel({
+  CalendarEventDataModel({
     required this.id,
     required this.title,
     required this.description,
@@ -43,42 +45,55 @@ class CalendarEventDataModel {
   }
 
   /// Unique identifier for the calendar event.
+  @HiveField(0)
   final String id;
 
   /// Title/summary of the calendar event.
+  @HiveField(1)
   final String title;
 
   /// Detailed description of the calendar event.
+  @HiveField(2)
   final String description;
 
   /// Start date and time of the event.
+  @HiveField(3)
   final DateTime startTime;
 
   /// End date and time of the event.
+  @HiveField(4)
   final DateTime endTime;
 
   /// Whether this is an all-day event.
+  @HiveField(5)
   final bool isAllDay;
 
   /// Current synchronization status (e.g., 'synced', 'pending', 'failed').
+  @HiveField(6)
   final CalendarSyncStatus syncStatus;
 
   /// Optional calendar ID where this event belongs.
+  @HiveField(7)
   final String? calendarId;
 
   /// Optional Google Calendar event ID for synced events.
+  @HiveField(8)
   final String? googleEventId;
 
   /// Last modification timestamp.
+  @HiveField(9)
   final DateTime? lastModified;
 
   /// Optional location where the event takes place.
+  @HiveField(10)
   final String? location;
 
   /// Optional recurrence rule for repeating events.
+  @HiveField(11)
   final String? recurrenceRule;
 
   /// List of attendee email addresses.
+  @HiveField(12)
   final List<String> attendees;
 
   /// Converts this CalendarEventDataModel to a JSON map.
