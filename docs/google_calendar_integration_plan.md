@@ -43,27 +43,31 @@ This document provides a comprehensive implementation plan for integrating Googl
     - ✅ Use cases TDD cycle (RED→GREEN→REFACTOR)
     - ✅ GoogleCalendarDatasource TDD cycle (RED→GREEN→REFACTOR)
     - ✅ **NEW**: CalendarSyncService TDD cycle (RED→GREEN→REFACTOR)
+    - ✅ **NEW**: GoogleAuthService integration with CalendarSyncService TDD cycle (RED→GREEN→REFACTOR)
+    - ✅ **NEW**: CalendarOfflineSyncService offline support TDD cycle (RED→GREEN→REFACTOR)
   - Comprehensive test coverage for all CRUD operations ✅
   - Proper mocktail setup with fallback values ✅
+  - **NEW**: Offline sync capabilities with local caching and conflict resolution ✅
+  - **NEW**: Authenticated sync service integration ✅
 
 ### 🔄 IN PROGRESS (Next Priority)
-- **Authentication Service Integration**: Complete Google OAuth implementation and integration with CalendarSyncService
-- **Platform Configuration**: Android/iOS specific OAuth setup
+- **Platform Configuration**: Android/iOS specific OAuth setup and production deployment
+- **Enhanced Offline Features**: Persistent local storage with Hive/SQLite
+- **Background Sync**: Workmanager integration for automatic synchronization
 
 ### ❌ PENDING (Future Iterations)
-- **Service Integration**: Connect CalendarSyncService with GoogleAuthService
 - **Error Handling**: Enhanced error scenarios and recovery patterns
-- **Offline Support**: Local caching and sync conflict resolution
-- **Performance**: Background sync optimization and caching strategies
-- **Testing**: Integration tests and UI component tests
-- **Security**: PKCE implementation and enhanced token management
+- **Performance**: Background sync optimization and advanced caching strategies
+- **Testing**: End-to-end integration tests and UI component tests
+- **Security**: Enhanced PKCE implementation and token rotation
 - **Privacy**: GDPR compliance and data handling protocols
+- **Production**: App Store/Play Store OAuth verification setup
 
 ### 📋 NEXT IMMEDIATE STEPS
-1. **TDD Red Phase**: Create failing tests for authentication service integration with CalendarSyncService
-2. **TDD Green Phase**: Implement minimal integration between GoogleAuthService and CalendarSyncService
-3. **TDD Refactor Phase**: Enhance integration with proper session management and error handling
-4. **Platform Setup**: Configure Android/iOS OAuth redirect handling for production deployment
+1. **Platform Setup**: Configure Android/iOS OAuth redirect handling for production deployment
+2. **Persistent Storage**: Implement Hive or SQLite for offline event caching
+3. **Background Sync**: Add WorkManager for automatic sync when network available
+4. **Production Configuration**: Set up OAuth client credentials for app stores
 
 ---
 
@@ -524,6 +528,59 @@ class CalendarSyncService {
 
 /// LEGACY EXAMPLE (replaced by above implementation):
 class CalendarSyncService_Legacy {
+
+/// COMPLETED: CalendarOfflineSyncService Implementation ✅
+/// 
+/// Full TDD cycle completed (June 4, 2025) with comprehensive 
+/// offline support, local caching, and conflict resolution capabilities.
+class CalendarOfflineSyncService {
+  final CalendarSyncService _syncService;
+  final NetworkInfo _networkInfo;
+  
+  // REFACTORED: In-memory storage with factory constructors for type safety
+  final List<CalendarEvent> _cachedEvents = [];
+  final List<_OfflineAction> _pendingActions = [];
+  final Map<String, CalendarSyncStatus> _syncStatuses = {};
+
+  /// Network connectivity and caching integration
+  Future<Either<Failure, List<CalendarEvent>>> syncWithCaching() async {
+    // Implementation with automatic local caching during sync
+  }
+
+  /// Offline action queueing for create/update/delete operations
+  Future<Either<Failure, bool>> createEventOffline(CalendarEvent event) async {
+    // Implementation with validation and action queueing
+  }
+
+  /// Conflict detection and resolution with multiple strategies
+  Future<bool> detectConflict(CalendarEvent local, CalendarEvent remote) async {
+    // Implementation with content-based conflict detection
+  }
+
+  Future<CalendarEvent> resolveConflict(
+    CalendarEvent local,
+    CalendarEvent remote,
+    ConflictResolutionStrategy strategy, {
+    CalendarEvent? userChoice,
+  }) async {
+    // Implementation supporting lastWriteWins, localWins, remoteWins, manual
+  }
+
+  /// Background sync processing when network becomes available
+  Future<Either<Failure, bool>> processOfflineActions() async {
+    // Implementation with authentication check and partial failure handling
+  }
+
+  /// Sync status tracking for individual events
+  Future<void> setSyncStatus(String eventId, CalendarSyncStatus status) async;
+  Future<CalendarSyncStatus> getSyncStatus(String eventId) async;
+
+  // REFACTORED: Private helper methods for better code organization
+  void _validateEvent(CalendarEvent event);
+  Either<Failure, List<CalendarEvent>> _cacheEventsAndReturn(List<CalendarEvent> events);
+  Future<Either<Failure, bool>> _queueOfflineAction(_OfflineAction action);
+  bool _hasContentChanges(CalendarEvent local, CalendarEvent remote);
+}
   static const String _syncTokenKey = 'calendar_sync_token';
 
   Future<SyncResult> syncEvents() async {
@@ -866,7 +923,7 @@ This implementation plan provides a comprehensive foundation for secure, scalabl
 - ✅ **Sync Strategies**: Both full and incremental synchronization with sync token management
 - ✅ **Maintainability**: Clean code patterns with proper separation of concerns and extracted methods
 
-**CalendarSyncService Highlights (NEW):**
+**CalendarSyncService Highlights:**
 - ✅ **OAuth Authentication**: Complete Google Sign-In integration with scope validation
 - ✅ **Token Management**: Store, retrieve, refresh, and validate authentication tokens
 - ✅ **Sync Operations**: Full and incremental calendar synchronization with proper error handling
@@ -874,8 +931,17 @@ This implementation plan provides a comprehensive foundation for secure, scalabl
 - ✅ **Error Mapping**: Specific failure types for authentication, network, and server errors
 - ✅ **Code Organization**: Extracted methods for date calculations, event conversion, and error handling
 
-**Next Phase Ready**: Both datasource and sync service layers are production-ready. The next TDD cycle should focus on authentication service integration to create a complete calendar synchronization pipeline.
+**CalendarOfflineSyncService Highlights (NEW):**
+- ✅ **Offline Support**: Complete local caching and action queuing for offline operations
+- ✅ **Conflict Resolution**: Multiple strategies (lastWriteWins, localWins, remoteWins, manual)
+- ✅ **Network Awareness**: Automatic sync when connectivity restored with NetworkInfo integration
+- ✅ **Sync Status Tracking**: Individual event sync status management (syncing, synced, conflict, failed)
+- ✅ **Background Processing**: Queue-based offline action processing with partial failure handling
+- ✅ **Data Integrity**: Validation and referential integrity maintenance during offline operations
+- ✅ **Factory Patterns**: Type-safe action creation with proper encapsulation
+
+**Next Phase Ready**: All core service layers (datasource, sync, offline sync) are production-ready. The next iteration should focus on platform-specific OAuth configuration and persistent storage integration.
 
 Regular updates to this plan should be made as Google's APIs and security requirements evolve. Monitor the [Google Developers Blog](https://developers.googleblog.com/) and [Workspace API updates](https://developers.google.com/workspace/releases) for the latest changes.
 
-**Last Updated**: June 4, 2025 - CalendarSyncService TDD cycle completion
+**Last Updated**: June 4, 2025 - CalendarOfflineSyncService TDD cycle completion
