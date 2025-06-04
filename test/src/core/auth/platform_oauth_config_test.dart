@@ -250,7 +250,7 @@ void main() {
       test('should generate production-ready iOS configuration with App Check', () async {
         // Arrange
         const bundleId = 'com.example.planning';
-        const teamId = 'ABC123XYZ';
+        const teamId = 'ABC123XYZ0';
         const clientId = '123456789-abcdefgh.apps.googleusercontent.com';
 
         // Act
@@ -283,7 +283,7 @@ void main() {
           },
           'ios': {
             'bundleId': 'com.example.planning',
-            'teamId': 'ABC123XYZ',
+            'teamId': 'ABC123XYZ0',
             'clientId': '123456789-abcdefgh.apps.googleusercontent.com',
           },
         };
