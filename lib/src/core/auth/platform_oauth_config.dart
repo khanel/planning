@@ -5,8 +5,74 @@ import 'package:planning/src/core/errors/failures.dart';
 /// 
 /// This class handles the configuration of OAuth 2.0 settings for both Android and iOS platforms,
 /// including redirect URIs, manifest/plist configurations, and validation.
+/// 
+/// Follows Google's OAuth 2.0 best practices for mobile applications with PKCE.
 class PlatformOAuthConfig {
+  // Constants for validation patterns
+  static const String _oauth2CallbackPath = '://oauth/callback';
+  static const String _googleClientIdSuffix = '.apps.googleusercontent.com';
+  static const String _googleReversedPrefix = 'com.googleusercontent.apps.';
   
+  // Validation patterns
+  static final RegExp _androidSchemePattern = RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*$');
+  static final RegExp _iosBundleIdPattern = RegExp(r'^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)*$');
+  static final RegExp _sha1FingerprintPattern = RegExp(r'^[A-F0-9]{2}(:[A-F0-9]{2}){19}$');
+  
+  // Required OAuth configuration fields
+  static const List<String> _requiredOAuthFields = ['clientId', 'redirectUri'];
+  static const List<String> _requiredAndroidProdFields = ['packageName', 'sha1Fingerprint', 'clientId'];
+  static const List<String> _requiredIOSProdFields = ['bundleId', 'teamId', 'clientId'];
+  
+  // Private helper methods for validation and utility functions
+  
+  /// Validates that a string is not empty or whitespace only
+  bool _isValidNonEmptyString(String? value) {
+    return value != null && value.trim().isNotEmpty;
+  }
+  
+  /// Validates Android package name format
+  bool _isValidAndroidPackageName(String packageName) {
+    return _androidSchemePattern.hasMatch(packageName);
+  }
+  
+  /// Validates iOS bundle identifier format
+  bool _isValidIOSBundleId(String bundleId) {
+    return _iosBundleIdPattern.hasMatch(bundleId);
+  }
+  
+  /// Validates Google OAuth client ID format
+  bool _isValidGoogleClientId(String clientId) {
+    return clientId.contains(_googleClientIdSuffix) && clientId.length > _googleClientIdSuffix.length;
+  }
+  
+  /// Validates SHA1 fingerprint format for Android production
+  bool _isValidSHA1Fingerprint(String fingerprint) {
+    return _sha1FingerprintPattern.hasMatch(fingerprint.toUpperCase());
+  }
+  
+  /// Generates OAuth redirect URI for a given platform identifier
+  String _generateRedirectUri(String platformId) {
+    return '$platformId$_oauth2CallbackPath';
+  }
+  
+  /// Validates that all required fields are present in a configuration map
+  Either<PlatformConfigFailure, bool> _validateRequiredFields(
+    Map<String, dynamic> config, 
+    List<String> requiredFields,
+    String configType,
+  ) {
+    for (final field in requiredFields) {
+      if (!config.containsKey(field) || 
+          config[field] == null || 
+          config[field].toString().trim().isEmpty) {
+        return Left(PlatformConfigFailure(
+          'Missing required $configType field: $field'
+        ));
+      }
+    }
+    return const Right(true);
+  }
+
   // Android OAuth Configuration Methods
   
   /// Generates the OAuth redirect URI for Android platform
@@ -14,25 +80,38 @@ class PlatformOAuthConfig {
   /// Uses the package name as the custom URI scheme following Google's recommendations
   /// Format: packageName://oauth/callback
   Future<Either<PlatformConfigFailure, String>> getAndroidRedirectUri(String packageName) async {
-    if (packageName.isEmpty) {
-      return const Left(PlatformConfigFailure('Package name cannot be empty'));
+    if (!_isValidNonEmptyString(packageName)) {
+      return const Left(PlatformConfigFailure('Android package name cannot be empty'));
     }
     
-    return Right('$packageName://oauth/callback');
+    if (!_isValidAndroidPackageName(packageName)) {
+      return Left(PlatformConfigFailure(
+        'Invalid Android package name format: $packageName. Must follow reverse domain notation.'
+      ));
+    }
+    
+    return Right(_generateRedirectUri(packageName));
   }
 
   /// Validates Android custom URI scheme format
   /// 
   /// Checks if the scheme follows Android URI scheme requirements
   Future<Either<PlatformConfigFailure, bool>> validateAndroidUriScheme(String scheme) async {
-    // Check for invalid characters
-    if (scheme.contains('..') || scheme.contains(' ') || scheme.isEmpty) {
-      return const Left(PlatformConfigFailure('Invalid Android URI scheme format'));
+    if (!_isValidNonEmptyString(scheme)) {
+      return const Left(PlatformConfigFailure('Android URI scheme cannot be empty'));
     }
     
-    // Basic validation - should be a valid reverse domain notation
-    if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*$').hasMatch(scheme)) {
-      return const Left(PlatformConfigFailure('URI scheme must follow reverse domain notation'));
+    // Check for invalid characters that would break Android intent handling
+    if (scheme.contains('..') || scheme.contains(' ') || scheme.contains('@')) {
+      return Left(PlatformConfigFailure(
+        'Invalid Android URI scheme: $scheme contains forbidden characters'
+      ));
+    }
+    
+    if (!_isValidAndroidPackageName(scheme)) {
+      return Left(PlatformConfigFailure(
+        'Android URI scheme must follow reverse domain notation: $scheme'
+      ));
     }
     
     return const Right(true);
@@ -42,8 +121,14 @@ class PlatformOAuthConfig {
   /// 
   /// Creates the XML configuration needed for AndroidManifest.xml
   Future<Either<PlatformConfigFailure, String>> generateAndroidManifestConfig(String packageName) async {
-    if (packageName.isEmpty) {
-      return const Left(PlatformConfigFailure('Package name cannot be empty'));
+    if (!_isValidNonEmptyString(packageName)) {
+      return const Left(PlatformConfigFailure('Package name cannot be empty for manifest generation'));
+    }
+
+    if (!_isValidAndroidPackageName(packageName)) {
+      return Left(PlatformConfigFailure(
+        'Invalid package name for manifest: $packageName'
+      ));
     }
 
     final config = '''
@@ -64,47 +149,62 @@ class PlatformOAuthConfig {
   /// Uses the bundle ID as the custom URI scheme
   /// Format: bundleId://oauth/callback
   Future<Either<PlatformConfigFailure, String>> getIOSRedirectUri(String bundleId) async {
-    if (bundleId.isEmpty) {
-      return const Left(PlatformConfigFailure('Bundle ID cannot be empty'));
+    if (!_isValidNonEmptyString(bundleId)) {
+      return const Left(PlatformConfigFailure('iOS bundle ID cannot be empty'));
     }
     
-    return Right('$bundleId://oauth/callback');
+    if (!_isValidIOSBundleId(bundleId)) {
+      return Left(PlatformConfigFailure(
+        'Invalid iOS bundle ID format: $bundleId. Must follow reverse domain notation.'
+      ));
+    }
+    
+    return Right(_generateRedirectUri(bundleId));
   }
 
   /// Generates reversed client ID for iOS URL scheme
   /// 
   /// Converts Google OAuth client ID to reversed format for iOS
   Future<Either<PlatformConfigFailure, String>> generateIOSReversedClientId(String clientId) async {
-    if (clientId.isEmpty || !clientId.contains('.apps.googleusercontent.com')) {
-      return const Left(PlatformConfigFailure('Invalid Google OAuth client ID format'));
+    if (!_isValidNonEmptyString(clientId)) {
+      return const Left(PlatformConfigFailure('Google OAuth client ID cannot be empty'));
+    }
+    
+    if (!_isValidGoogleClientId(clientId)) {
+      return Left(PlatformConfigFailure(
+        'Invalid Google OAuth client ID format: $clientId. Must end with $_googleClientIdSuffix'
+      ));
     }
     
     // Extract the client ID part before .apps.googleusercontent.com
-    final parts = clientId.split('.apps.googleusercontent.com');
-    if (parts.isEmpty) {
-      return const Left(PlatformConfigFailure('Invalid client ID format'));
+    final parts = clientId.split(_googleClientIdSuffix);
+    if (parts.isEmpty || parts[0].isEmpty) {
+      return const Left(PlatformConfigFailure('Unable to extract client ID from Google OAuth client ID'));
     }
     
     final clientIdPart = parts[0];
-    return Right('com.googleusercontent.apps.$clientIdPart');
+    return Right('$_googleReversedPrefix$clientIdPart');
   }
 
   /// Validates iOS bundle identifier format
   /// 
   /// Checks if the bundle ID follows Apple's requirements
   Future<Either<PlatformConfigFailure, bool>> validateIOSBundleId(String bundleId) async {
-    if (bundleId.isEmpty) {
-      return const Left(PlatformConfigFailure('Bundle ID cannot be empty'));
+    if (!_isValidNonEmptyString(bundleId)) {
+      return const Left(PlatformConfigFailure('iOS bundle ID cannot be empty'));
     }
     
-    // Check for invalid characters (spaces, special chars)
+    // Check for invalid characters (spaces, special chars that break iOS schemes)
     if (bundleId.contains(' ') || bundleId.contains('!') || bundleId.contains('@')) {
-      return const Left(PlatformConfigFailure('Bundle ID contains invalid characters'));
+      return Left(PlatformConfigFailure(
+        'iOS bundle ID contains invalid characters: $bundleId'
+      ));
     }
     
-    // Basic validation - should be reverse domain notation
-    if (!RegExp(r'^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)*$').hasMatch(bundleId)) {
-      return const Left(PlatformConfigFailure('Bundle ID must follow reverse domain notation'));
+    if (!_isValidIOSBundleId(bundleId)) {
+      return Left(PlatformConfigFailure(
+        'iOS bundle ID must follow reverse domain notation: $bundleId'
+      ));
     }
     
     return const Right(true);
@@ -152,17 +252,27 @@ class PlatformOAuthConfig {
     String clientId, 
     String platformId,
   ) async {
-    if (clientId.isEmpty || platformId.isEmpty) {
-      return const Left(PlatformConfigFailure('Client ID and platform ID cannot be empty'));
+    if (!_isValidNonEmptyString(clientId) || !_isValidNonEmptyString(platformId)) {
+      return const Left(PlatformConfigFailure(
+        'Client ID and platform ID cannot be empty for platform configuration'
+      ));
     }
 
-    final redirectUri = '$platformId://oauth/callback';
+    if (!_isValidGoogleClientId(clientId)) {
+      return Left(PlatformConfigFailure(
+        'Invalid Google OAuth client ID format: $clientId'
+      ));
+    }
+
+    final redirectUri = _generateRedirectUri(platformId);
     
     final config = {
       'clientId': clientId,
       'redirectUri': redirectUri,
       'scopes': ['https://www.googleapis.com/auth/calendar'],
       'platformId': platformId,
+      'responseType': 'code',
+      'codeChallenge': 'required', // PKCE requirement indicator
     };
 
     return Right(config);
@@ -173,18 +283,24 @@ class PlatformOAuthConfig {
   /// Checks if all required OAuth parameters are present and valid
   Future<Either<PlatformConfigFailure, bool>> validateOAuthConfig(Map<String, dynamic> config) async {
     if (config.isEmpty) {
-      return const Left(PlatformConfigFailure('Configuration cannot be empty'));
+      return const Left(PlatformConfigFailure('OAuth configuration cannot be empty'));
     }
 
-    // Check required fields
-    final requiredFields = ['clientId', 'redirectUri'];
-    for (final field in requiredFields) {
-      if (!config.containsKey(field) || config[field] == null || config[field].toString().isEmpty) {
-        return Left(PlatformConfigFailure('Missing required field: $field'));
-      }
-    }
-
-    return const Right(true);
+    // Validate required fields using helper method
+    final validationResult = _validateRequiredFields(config, _requiredOAuthFields, 'OAuth');
+    return validationResult.fold(
+      (failure) => Left(failure),
+      (_) {
+        // Additional validation for client ID format if present
+        final clientId = config['clientId']?.toString();
+        if (clientId != null && !_isValidGoogleClientId(clientId)) {
+          return const Left(PlatformConfigFailure(
+            'OAuth configuration contains invalid Google client ID format'
+          ));
+        }
+        return const Right(true);
+      },
+    );
   }
 
   // Production Configuration Methods
@@ -197,20 +313,54 @@ class PlatformOAuthConfig {
     String clientId,
     String sha1Fingerprint,
   ) async {
-    if (packageName.isEmpty || clientId.isEmpty || sha1Fingerprint.isEmpty) {
-      return const Left(PlatformConfigFailure('All parameters are required for production config'));
-    }
-
-    final config = {
+    // Validate all required fields using helper method
+    final tempConfig = {
       'packageName': packageName,
       'clientId': clientId,
       'sha1Fingerprint': sha1Fingerprint,
-      'verificationRequired': true,
-      'debugMode': false,
-      'redirectUri': '$packageName://oauth/callback',
     };
+    
+    final validationResult = _validateRequiredFields(
+      tempConfig, 
+      _requiredAndroidProdFields, 
+      'Android production'
+    );
+    
+    return validationResult.fold(
+      (failure) => Left(failure),
+      (_) {
+        // Additional validation for specific field formats
+        if (!_isValidAndroidPackageName(packageName)) {
+          return Left(PlatformConfigFailure(
+            'Invalid Android package name for production: $packageName'
+          ));
+        }
+        
+        if (!_isValidGoogleClientId(clientId)) {
+          return Left(PlatformConfigFailure(
+            'Invalid Google client ID for production: $clientId'
+          ));
+        }
+        
+        if (!_isValidSHA1Fingerprint(sha1Fingerprint)) {
+          return Left(PlatformConfigFailure(
+            'Invalid SHA1 fingerprint format: $sha1Fingerprint. Expected format: AA:BB:CC:...'
+          ));
+        }
 
-    return Right(config);
+        final config = {
+          'packageName': packageName,
+          'clientId': clientId,
+          'sha1Fingerprint': sha1Fingerprint.toUpperCase(),
+          'verificationRequired': true,
+          'debugMode': false,
+          'redirectUri': _generateRedirectUri(packageName),
+          'securityLevel': 'production',
+        };
+
+        return Right(config);
+      },
+    );
   }
 
   /// Generates production-ready iOS configuration with App Check
@@ -221,20 +371,55 @@ class PlatformOAuthConfig {
     String teamId,
     String clientId,
   ) async {
-    if (bundleId.isEmpty || teamId.isEmpty || clientId.isEmpty) {
-      return const Left(PlatformConfigFailure('All parameters are required for production config'));
-    }
-
-    final config = {
+    // Validate all required fields using helper method
+    final tempConfig = {
       'bundleId': bundleId,
       'teamId': teamId,
       'clientId': clientId,
-      'appCheckEnabled': true,
-      'debugMode': false,
-      'redirectUri': '$bundleId://oauth/callback',
     };
+    
+    final validationResult = _validateRequiredFields(
+      tempConfig, 
+      _requiredIOSProdFields, 
+      'iOS production'
+    );
+    
+    return validationResult.fold(
+      (failure) => Left(failure),
+      (_) {
+        // Additional validation for specific field formats
+        if (!_isValidIOSBundleId(bundleId)) {
+          return Left(PlatformConfigFailure(
+            'Invalid iOS bundle ID for production: $bundleId'
+          ));
+        }
+        
+        if (!_isValidGoogleClientId(clientId)) {
+          return Left(PlatformConfigFailure(
+            'Invalid Google client ID for production: $clientId'
+          ));
+        }
+        
+        // Basic team ID validation (10-character alphanumeric)
+        if (teamId.length != 10 || !RegExp(r'^[A-Z0-9]{10}$').hasMatch(teamId)) {
+          return Left(PlatformConfigFailure(
+            'Invalid iOS team ID format: $teamId. Expected 10-character alphanumeric string.'
+          ));
+        }
 
-    return Right(config);
+        final config = {
+          'bundleId': bundleId,
+          'teamId': teamId,
+          'clientId': clientId,
+          'appCheckEnabled': true,
+          'debugMode': false,
+          'redirectUri': _generateRedirectUri(bundleId),
+          'securityLevel': 'production',
+        };
+
+        return Right(config);
+      },
+    );
   }
 
   /// Validates production deployment readiness
@@ -244,37 +429,95 @@ class PlatformOAuthConfig {
     Map<String, dynamic> productionConfig,
   ) async {
     if (productionConfig.isEmpty) {
-      return const Left(PlatformConfigFailure('Production configuration cannot be empty'));
+      return const Left(PlatformConfigFailure(
+        'Production configuration cannot be empty'
+      ));
     }
 
     // Check for required platform configurations
     if (!productionConfig.containsKey('android') || !productionConfig.containsKey('ios')) {
-      return const Left(PlatformConfigFailure('Both Android and iOS configurations are required'));
+      return const Left(PlatformConfigFailure(
+        'Both Android and iOS configurations are required for production deployment'
+      ));
     }
 
     final android = productionConfig['android'] as Map<String, dynamic>?;
     final ios = productionConfig['ios'] as Map<String, dynamic>?;
 
     if (android == null || ios == null) {
-      return const Left(PlatformConfigFailure('Invalid platform configuration format'));
+      return const Left(PlatformConfigFailure(
+        'Invalid platform configuration format - configs must be maps'
+      ));
     }
 
-    // Validate Android config
-    final androidRequiredFields = ['packageName', 'sha1Fingerprint', 'clientId'];
-    for (final field in androidRequiredFields) {
-      if (!android.containsKey(field) || android[field].toString().isEmpty) {
-        return Left(PlatformConfigFailure('Missing Android field: $field'));
-      }
+    // Validate Android production configuration
+    final androidValidation = _validateRequiredFields(
+      android, 
+      _requiredAndroidProdFields, 
+      'Android production'
+    );
+    
+    if (androidValidation.isLeft()) {
+      return androidValidation;
+    }
+    
+    // Additional Android-specific validations
+    final packageName = android['packageName']?.toString() ?? '';
+    final sha1 = android['sha1Fingerprint']?.toString() ?? '';
+    final androidClientId = android['clientId']?.toString() ?? '';
+    
+    if (!_isValidAndroidPackageName(packageName)) {
+      return const Left(PlatformConfigFailure(
+        'Android production config has invalid package name format'
+      ));
+    }
+    
+    if (!_isValidSHA1Fingerprint(sha1)) {
+      return const Left(PlatformConfigFailure(
+        'Android production config has invalid SHA1 fingerprint format'
+      ));
+    }
+    
+    if (!_isValidGoogleClientId(androidClientId)) {
+      return const Left(PlatformConfigFailure(
+        'Android production config has invalid Google client ID format'
+      ));
     }
 
-    // Validate iOS config
-    final iosRequiredFields = ['bundleId', 'teamId', 'clientId'];
-    for (final field in iosRequiredFields) {
-      if (!ios.containsKey(field) || ios[field].toString().isEmpty) {
-        return Left(PlatformConfigFailure('Missing iOS field: $field'));
-      }
+    // Validate iOS production configuration
+    final iosValidation = _validateRequiredFields(
+      ios, 
+      _requiredIOSProdFields, 
+      'iOS production'
+    );
+    
+    if (iosValidation.isLeft()) {
+      return iosValidation;
     }
-
+    
+    // Additional iOS-specific validations
+    final bundleId = ios['bundleId']?.toString() ?? '';
+    final teamId = ios['teamId']?.toString() ?? '';
+    final iosClientId = ios['clientId']?.toString() ?? '';
+    
+    if (!_isValidIOSBundleId(bundleId)) {
+      return const Left(PlatformConfigFailure(
+        'iOS production config has invalid bundle ID format'
+      ));
+    }
+    
+    if (teamId.length != 10 || !RegExp(r'^[A-Z0-9]{10}$').hasMatch(teamId)) {
+      return const Left(PlatformConfigFailure(
+        'iOS production config has invalid team ID format'
+      ));
+    }
+    
+    if (!_isValidGoogleClientId(iosClientId)) {
+      return const Left(PlatformConfigFailure(
+        'iOS production config has invalid Google client ID format'
+      ));
+    }
+    
     return const Right(true);
   }
 }
