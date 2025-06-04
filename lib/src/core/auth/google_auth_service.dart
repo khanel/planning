@@ -3,6 +3,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:planning/src/core/auth/token_manager.dart';
+import 'package:planning/src/core/auth/pkce_helper.dart';
 import 'package:planning/src/core/errors/failures.dart';
 
 /// Service for handling Google authentication and API access

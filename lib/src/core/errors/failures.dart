@@ -17,7 +17,7 @@ class ServerFailure extends Failure {
 class CacheFailure extends Failure {
   final String message;
   
-  const CacheFailure([this.message = 'Cache operation failed']);
+  const CacheFailure([this.message = 'Cache operation failed']) : super();
   
   @override
   List<Object?> get props => [message];
@@ -54,6 +54,15 @@ class UnknownFailure extends Failure {
   final String message;
   
   const UnknownFailure([this.message = 'Unknown error occurred']);
+  
+  @override
+  List<Object?> get props => [message];
+}
+
+class SyncFailure extends Failure {
+  final String message;
+  
+  const SyncFailure([this.message = 'Synchronization failed']);
   
   @override
   List<Object?> get props => [message];
