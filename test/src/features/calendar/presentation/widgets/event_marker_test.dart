@@ -359,6 +359,9 @@ void main() {
     });
 
     group('Layout and Positioning Tests', () {
+      const double testContainerWidth = 100.0;
+      const double testContainerHeight = 100.0;
+      
       testWidgets('should apply correct top padding to the marker', (WidgetTester tester) async {
         // Arrange
         final testDay = DateTime(2024, 1, 15);
@@ -503,226 +506,230 @@ void main() {
         expect(row.children[1], isA<Text>());
       });
 
-      testWidgets('should calculate correct overall widget size for single event', (WidgetTester tester) async {
-        // Arrange
-        final testDay = DateTime(2024, 1, 15);
-        final events = [
-          createTestEvent(
-            id: 'event-1',
-            title: 'Test Event',
-            startTime: DateTime(2024, 1, 15, 10, 0),
-            endTime: DateTime(2024, 1, 15, 11, 0),
-          ),
-        ];
+      group('Widget Sizing', () {
+        testWidgets('should calculate correct overall widget size for single event', (WidgetTester tester) async {
+          // Arrange
+          final testDay = DateTime(2024, 1, 15);
+          final events = [
+            createTestEvent(
+              id: 'event-1',
+              title: 'Test Event',
+              startTime: DateTime(2024, 1, 15, 10, 0),
+              endTime: DateTime(2024, 1, 15, 11, 0),
+            ),
+          ];
 
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 100,
-                height: 100,
-                child: EventMarker(
-                  day: testDay,
-                  events: events,
+          // Act
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: testContainerWidth,
+                  height: testContainerHeight,
+                  child: EventMarker(
+                    day: testDay,
+                    events: events,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        // Assert
-        final eventMarkerFinder = find.byType(EventMarker);
-        expect(eventMarkerFinder, findsOneWidget);
-        
-        final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
-        final Size actualSize = renderBox.size;
-        
-        // Expected size: width should be constrained by parent (100), height should include padding
-        expect(actualSize.width, equals(100.0)); // Takes available width
-        expect(actualSize.height, greaterThanOrEqualTo(6.0)); // At least marker height
-        expect(actualSize.height, lessThanOrEqualTo(100.0)); // Within parent bounds
+          // Assert
+          final eventMarkerFinder = find.byType(EventMarker);
+          expect(eventMarkerFinder, findsOneWidget);
+          
+          final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
+          final Size actualSize = renderBox.size;
+          
+          // Expected size: width should be constrained by parent, height should include padding
+          expect(actualSize.width, equals(testContainerWidth));
+          expect(actualSize.height, greaterThanOrEqualTo(6.0)); // At least marker height
+          expect(actualSize.height, lessThanOrEqualTo(testContainerHeight)); // Within parent bounds
+        });
+
+        testWidgets('should calculate correct overall widget size for multiple events', (WidgetTester tester) async {
+          // Arrange
+          final testDay = DateTime(2024, 1, 15);
+          final events = [
+            createTestEvent(
+              id: 'event-1',
+              title: 'Event 1',
+              startTime: DateTime(2024, 1, 15, 10, 0),
+              endTime: DateTime(2024, 1, 15, 11, 0),
+            ),
+            createTestEvent(
+              id: 'event-2',
+              title: 'Event 2',
+              startTime: DateTime(2024, 1, 15, 14, 0),
+              endTime: DateTime(2024, 1, 15, 15, 0),
+            ),
+          ];
+
+          // Act
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: testContainerWidth,
+                  height: testContainerHeight,
+                  child: EventMarker(
+                    day: testDay,
+                    events: events,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          // Assert
+          final eventMarkerFinder = find.byType(EventMarker);
+          expect(eventMarkerFinder, findsOneWidget);
+          
+          final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
+          final Size actualSize = renderBox.size;
+          
+          // Expected size: width should be constrained by parent, 
+          // height should include padding and accommodate both marker and text
+          expect(actualSize.width, equals(testContainerWidth));
+          expect(actualSize.height, greaterThanOrEqualTo(6.0)); // At least marker height
+          expect(actualSize.height, lessThanOrEqualTo(testContainerHeight)); // Within parent bounds
+        });
       });
 
-      testWidgets('should calculate correct overall widget size for multiple events', (WidgetTester tester) async {
-        // Arrange
-        final testDay = DateTime(2024, 1, 15);
-        final events = [
-          createTestEvent(
-            id: 'event-1',
-            title: 'Event 1',
-            startTime: DateTime(2024, 1, 15, 10, 0),
-            endTime: DateTime(2024, 1, 15, 11, 0),
-          ),
-          createTestEvent(
-            id: 'event-2',
-            title: 'Event 2',
-            startTime: DateTime(2024, 1, 15, 14, 0),
-            endTime: DateTime(2024, 1, 15, 15, 0),
-          ),
-        ];
+      group('Positioning and Constraints', () {
+        testWidgets('should maintain consistent positioning relative to parent widget', (WidgetTester tester) async {
+          // Arrange
+          final testDay = DateTime(2024, 1, 15);
+          final events = [
+            createTestEvent(
+              id: 'event-1',
+              title: 'Test Event',
+              startTime: DateTime(2024, 1, 15, 10, 0),
+              endTime: DateTime(2024, 1, 15, 11, 0),
+            ),
+          ];
 
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 100,
-                height: 100,
-                child: EventMarker(
-                  day: testDay,
-                  events: events,
+          // Act
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: EventMarker(
+                    day: testDay,
+                    events: events,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        // Assert
-        final eventMarkerFinder = find.byType(EventMarker);
-        expect(eventMarkerFinder, findsOneWidget);
-        
-        final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
-        final Size actualSize = renderBox.size;
-        
-        // Expected size: width should be constrained by parent (100), 
-        // height should include padding and accommodate both marker and text
-        expect(actualSize.width, equals(100.0)); // Takes available width
-        expect(actualSize.height, greaterThanOrEqualTo(6.0)); // At least marker height
-        expect(actualSize.height, lessThanOrEqualTo(100.0)); // Within parent bounds
-      });
+          // Assert
+          final eventMarkerFinder = find.byType(EventMarker);
+          expect(eventMarkerFinder, findsOneWidget);
+          
+          final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
+          final Offset position = renderBox.localToGlobal(Offset.zero);
+          
+          // Should be positioned within the parent bounds
+          expect(position.dx, greaterThanOrEqualTo(0.0));
+          expect(position.dy, greaterThanOrEqualTo(0.0));
+          
+          // Should not exceed parent bounds
+          expect(position.dx + renderBox.size.width, lessThanOrEqualTo(200.0));
+          expect(position.dy + renderBox.size.height, lessThanOrEqualTo(200.0));
+        });
 
-      testWidgets('should maintain consistent positioning relative to parent widget', (WidgetTester tester) async {
-        // Arrange
-        final testDay = DateTime(2024, 1, 15);
-        final events = [
-          createTestEvent(
-            id: 'event-1',
-            title: 'Test Event',
-            startTime: DateTime(2024, 1, 15, 10, 0),
-            endTime: DateTime(2024, 1, 15, 11, 0),
-          ),
-        ];
+        testWidgets('should handle zero-sized container gracefully', (WidgetTester tester) async {
+          // Arrange
+          final testDay = DateTime(2024, 1, 15);
+          final events = [
+            createTestEvent(
+              id: 'event-1',
+              title: 'Test Event',
+              startTime: DateTime(2024, 1, 15, 10, 0),
+              endTime: DateTime(2024, 1, 15, 11, 0),
+            ),
+          ];
 
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 200,
-                height: 200,
-                child: EventMarker(
-                  day: testDay,
-                  events: events,
+          // Act
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: 0,
+                  height: 0,
+                  child: EventMarker(
+                    day: testDay,
+                    events: events,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        // Assert
-        final eventMarkerFinder = find.byType(EventMarker);
-        expect(eventMarkerFinder, findsOneWidget);
-        
-        final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
-        final Offset position = renderBox.localToGlobal(Offset.zero);
-        
-        // Should be positioned within the parent bounds
-        expect(position.dx, greaterThanOrEqualTo(0.0));
-        expect(position.dy, greaterThanOrEqualTo(0.0));
-        
-        // Should not exceed parent bounds
-        expect(position.dx + renderBox.size.width, lessThanOrEqualTo(200.0));
-        expect(position.dy + renderBox.size.height, lessThanOrEqualTo(200.0));
-      });
+          // Assert
+          final eventMarkerFinder = find.byType(EventMarker);
+          expect(eventMarkerFinder, findsOneWidget);
+          
+          final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
+          final Size actualSize = renderBox.size;
+          
+          // Should not cause overflow or crash
+          expect(actualSize.width, greaterThanOrEqualTo(0));
+          expect(actualSize.height, greaterThanOrEqualTo(0));
+        });
 
-      testWidgets('should handle zero-sized container gracefully', (WidgetTester tester) async {
-        // Arrange
-        final testDay = DateTime(2024, 1, 15);
-        final events = [
-          createTestEvent(
-            id: 'event-1',
-            title: 'Test Event',
-            startTime: DateTime(2024, 1, 15, 10, 0),
-            endTime: DateTime(2024, 1, 15, 11, 0),
-          ),
-        ];
+        testWidgets('should respect parent constraints and not overflow', (WidgetTester tester) async {
+          // Arrange
+          final testDay = DateTime(2024, 1, 15);
+          final events = [
+            createTestEvent(
+              id: 'event-1',
+              title: 'Event 1',
+              startTime: DateTime(2024, 1, 15, 10, 0),
+              endTime: DateTime(2024, 1, 15, 11, 0),
+            ),
+            createTestEvent(
+              id: 'event-2',
+              title: 'Event 2',
+              startTime: DateTime(2024, 1, 15, 14, 0),
+              endTime: DateTime(2024, 1, 15, 15, 0),
+            ),
+          ];
 
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 0,
-                height: 0,
-                child: EventMarker(
-                  day: testDay,
-                  events: events,
+          // Act
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: 20, // Wider container to accommodate content
+                  height: 20, // Taller container to accommodate content
+                  child: EventMarker(
+                    day: testDay,
+                    events: events,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        // Assert
-        final eventMarkerFinder = find.byType(EventMarker);
-        expect(eventMarkerFinder, findsOneWidget);
-        
-        final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
-        final Size actualSize = renderBox.size;
-        
-        // Should not cause overflow or crash
-        expect(actualSize.width, greaterThanOrEqualTo(0));
-        expect(actualSize.height, greaterThanOrEqualTo(0));
-      });
-
-      testWidgets('should respect parent constraints and not overflow', (WidgetTester tester) async {
-        // Arrange
-        final testDay = DateTime(2024, 1, 15);
-        final events = [
-          createTestEvent(
-            id: 'event-1',
-            title: 'Event 1',
-            startTime: DateTime(2024, 1, 15, 10, 0),
-            endTime: DateTime(2024, 1, 15, 11, 0),
-          ),
-          createTestEvent(
-            id: 'event-2',
-            title: 'Event 2',
-            startTime: DateTime(2024, 1, 15, 14, 0),
-            endTime: DateTime(2024, 1, 15, 15, 0),
-          ),
-        ];
-
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 20, // Wider container to accommodate content
-                height: 20, // Taller container to accommodate content
-                child: EventMarker(
-                  day: testDay,
-                  events: events,
-                ),
-              ),
-            ),
-          ),
-        );
-
-        // Assert
-        final eventMarkerFinder = find.byType(EventMarker);
-        expect(eventMarkerFinder, findsOneWidget);
-        
-        final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
-        final Size actualSize = renderBox.size;
-        
-        // Should not exceed parent constraints
-        expect(actualSize.width, lessThanOrEqualTo(20));
-        expect(actualSize.height, lessThanOrEqualTo(20));
-        
-        // Should handle tight constraints gracefully (no overflow exception should occur)
-        expect(tester.takeException(), isNull);
+          // Assert
+          final eventMarkerFinder = find.byType(EventMarker);
+          expect(eventMarkerFinder, findsOneWidget);
+          
+          final RenderBox renderBox = tester.renderObject(eventMarkerFinder);
+          final Size actualSize = renderBox.size;
+          
+          // Should not exceed parent constraints
+          expect(actualSize.width, lessThanOrEqualTo(20));
+          expect(actualSize.height, lessThanOrEqualTo(20));
+          
+          // Should handle tight constraints gracefully (no overflow exception should occur)
+          expect(tester.takeException(), isNull);
+        });
       });
     });
   });
