@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:planning/src/features/scheduling/domain/entities/schedule_event.dart';
 
 /// Widget that displays a visual marker for events on a specific day in a calendar.
 /// 
 /// Shows a circular marker and optional count badge when events are present.
 /// Supports multi-day events and day-specific filtering.
+/// Provides tap interaction when onTap callback is provided.
 class EventMarker extends StatelessWidget {
   // Styling constants
   static const double _markerSize = 6.0;
@@ -14,11 +16,13 @@ class EventMarker extends StatelessWidget {
   
   final DateTime day;
   final List<ScheduleEvent> events;
+  final void Function(DateTime day, List<ScheduleEvent> dayEvents)? onTap;
 
   const EventMarker({
     super.key,
     required this.day,
     required this.events,
+    this.onTap,
   });
 
   /// Filters events to only include those that occur on or span the specified [day].
@@ -88,15 +92,30 @@ class EventMarker extends StatelessWidget {
       return const SizedBox.shrink();
     }
     
+    final content = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildMarker(context),
+        if (dayEvents.length > 1)
+          _buildCountBadge(context, dayEvents.length),
+      ],
+    );
+
+    if (onTap == null) {
+      return Padding(
+        padding: _topPadding,
+        child: content,
+      );
+    }
+
     return Padding(
       padding: _topPadding,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildMarker(context),
-          if (dayEvents.length > 1)
-            _buildCountBadge(context, dayEvents.length),
-        ],
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap!(day, dayEvents);
+        },
+        child: content,
       ),
     );
   }
