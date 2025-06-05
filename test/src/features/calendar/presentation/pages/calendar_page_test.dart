@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:planning/src/features/calendar/presentation/pages/calendar_page.dart';
+import 'package:planning/src/features/scheduling/domain/entities/schedule_event.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
       );
 
       // Assert - This should FAIL initially as CalendarPage doesn't exist
-      expect(find.byType(TableCalendar), findsOneWidget);
+      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
     });
 
     testWidgets('should display app bar with Calendar title', (WidgetTester tester) async {
@@ -43,7 +44,7 @@ void main() {
       );
 
       // Assert - This should FAIL initially as CalendarPage doesn't exist
-      final tableCalendar = tester.widget<TableCalendar>(find.byType(TableCalendar));
+      final tableCalendar = tester.widget<TableCalendar<ScheduleEvent>>(find.byType(TableCalendar<ScheduleEvent>));
       expect(tableCalendar.focusedDay.month, now.month);
       expect(tableCalendar.focusedDay.year, now.year);
     });
@@ -78,7 +79,7 @@ void main() {
 
       // Assert - This should FAIL initially as CalendarPage doesn't exist and route isn't configured
       expect(find.byType(CalendarPage), findsOneWidget);
-      expect(find.byType(TableCalendar), findsOneWidget);
+      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
     });
 
     testWidgets('should allow date selection interaction', (WidgetTester tester) async {
@@ -96,7 +97,7 @@ void main() {
 
       // Assert - This should FAIL initially as CalendarPage doesn't exist
       // For now, we just verify the page still displays properly after interaction
-      expect(find.byType(TableCalendar), findsOneWidget);
+      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
       expect(find.byType(AppBar), findsOneWidget);
     });
 
@@ -114,7 +115,7 @@ void main() {
       await tester.pump();
 
       // Assert - This should FAIL initially as CalendarPage doesn't exist
-      expect(find.byType(TableCalendar), findsOneWidget);
+      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
     });
   });
 }
