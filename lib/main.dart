@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:planning/src/features/task/presentation/screens/task_screen.dart';
 import 'package:planning/src/features/prioritization/presentation/pages/eisenhower_matrix_page.dart';
+import 'package:planning/src/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:planning/src/features/task/presentation/bloc/task_bloc.dart' as task_bloc;
 import 'package:planning/src/features/prioritization/presentation/bloc/prioritization_bloc.dart';
@@ -62,6 +63,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/eisenhower',
       builder: (context, state) => const EisenhowerMatrixPage(),
+    ),
+    GoRoute(
+      path: '/calendar',
+      builder: (context, state) => const CalendarPage(),
     ),
   ],
 );
