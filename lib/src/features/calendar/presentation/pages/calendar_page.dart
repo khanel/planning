@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:planning/src/features/scheduling/domain/entities/schedule_event.dart';
 
 class CalendarPage extends StatefulWidget {
-  const CalendarPage({super.key});
+  final List<ScheduleEvent> events;
+
+  const CalendarPage({
+    super.key,
+    this.events = const [],
+  });
 
   @override
   State<CalendarPage> createState() => _CalendarPageState();
@@ -12,6 +18,7 @@ class _CalendarPageState extends State<CalendarPage> {
   late DateTime _focusedDay;
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
+  List<ScheduleEvent> _selectedDayEvents = [];
 
   @override
   void initState() {
@@ -23,13 +30,18 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildCalendarFormatToggle(),
-          Expanded(
-            child: _buildCalendar(),
-          ),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildCalendarFormatToggle(),
+            _buildCalendar(),
+            if (_selectedDay != null)
+              Container(
+                height: 200,
+                child: _buildSelectedDayEvents(),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -52,18 +64,29 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildCalendar() {
-    return TableCalendar<dynamic>(
-      firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.utc(2030, 12, 31),
-      focusedDay: _focusedDay,
-      selectedDayPredicate: _isSelectedDay,
-      calendarFormat: _calendarFormat,
-      onDaySelected: _onDaySelected,
-      onFormatChanged: _onFormatChanged,
-      onPageChanged: _onPageChanged,
-      startingDayOfWeek: StartingDayOfWeek.monday,
-      calendarStyle: _buildCalendarStyle(),
-      headerStyle: _buildHeaderStyle(),
+    return SizedBox(
+      height: _calendarFormat == CalendarFormat.month ? 350 : 340,
+      child: TableCalendar<ScheduleEvent>(
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
+        focusedDay: _focusedDay,
+        selectedDayPredicate: _isSelectedDay,
+        calendarFormat: _calendarFormat,
+        onDaySelected: _onDaySelected,
+        onFormatChanged: _onFormatChanged,
+        onPageChanged: _onPageChanged,
+        startingDayOfWeek: StartingDayOfWeek.monday,
+        calendarStyle: _buildCalendarStyle(),
+        headerStyle: _buildHeaderStyle(),
+        eventLoader: _getEventsForDay,
+        calendarBuilders: CalendarBuilders<ScheduleEvent>(
+          markerBuilder: _buildEventMarker,
+        ),
+        availableGestures: AvailableGestures.all,
+        sixWeekMonthsEnforced: false,
+        daysOfWeekHeight: 30,
+        rowHeight: 40,
+      ),
     );
   }
 
@@ -90,6 +113,7 @@ class _CalendarPageState extends State<CalendarPage> {
     setState(() {
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
+      _selectedDayEvents = _getEventsForDay(selectedDay);
     });
   }
 
@@ -111,5 +135,84 @@ class _CalendarPageState extends State<CalendarPage> {
           ? CalendarFormat.twoWeeks
           : CalendarFormat.month;
     });
+  }
+
+  List<ScheduleEvent> _getEventsForDay(DateTime day) {
+    return widget.events.where((event) {
+      if (event.isAllDay) {
+        return isSameDay(event.startTime, day);
+      } else {
+        return event.startTime.year == day.year &&
+               event.startTime.month == day.month &&
+               event.startTime.day == day.day;
+      }
+    }).toList();
+  }
+
+  Widget? _buildEventMarker(BuildContext context, DateTime day, List<ScheduleEvent> events) {
+    if (events.isEmpty) return null;
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+            ),
+          ),
+          if (events.length > 1)
+            Text(
+              ' ${events.length}',
+              style: const TextStyle(fontSize: 10),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedDayEvents() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Events for selected day',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _selectedDayEvents.isEmpty
+                ? const Center(child: Text('No events for this day'))
+                : ListView.builder(
+                    itemCount: _selectedDayEvents.length,
+                    itemBuilder: (context, index) {
+                      final event = _selectedDayEvents[index];
+                      return ListTile(
+                        title: Text(event.title),
+                        subtitle: Text(_formatEventTime(event)),
+                        dense: true,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatEventTime(ScheduleEvent event) {
+    if (event.isAllDay) {
+      return 'All Day';
+    } else {
+      final startTime = '${event.startTime.hour.toString().padLeft(2, '0')}:${event.startTime.minute.toString().padLeft(2, '0')}';
+      final endTime = '${event.endTime.hour.toString().padLeft(2, '0')}:${event.endTime.minute.toString().padLeft(2, '0')}';
+      return '$startTime - $endTime';
+    }
   }
 }
