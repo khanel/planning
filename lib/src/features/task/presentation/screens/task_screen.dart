@@ -14,6 +14,10 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
+  // Navigation routes
+  static const String _eisenhowerRoute = '/eisenhower';
+  static const String _calendarRoute = '/calendar';
+
   @override
   void initState() {
     super.initState();
@@ -33,27 +37,35 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  void _navigateToEisenhowerMatrix() {
+    context.go(_eisenhowerRoute);
+  }
+
+  void _navigateToCalendar() {
+    context.go(_calendarRoute);
+  }
+
+  List<Widget> _buildAppBarActions() {
+    return [
+      IconButton(
+        icon: const Icon(Icons.grid_view),
+        tooltip: 'Eisenhower Matrix',
+        onPressed: _navigateToEisenhowerMatrix,
+      ),
+      IconButton(
+        icon: const Icon(Icons.calendar_today),
+        tooltip: 'Calendar',
+        onPressed: _navigateToCalendar,
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tasks'),
-        actions: [
-          // Button to navigate to Eisenhower Matrix Screen
-          IconButton(
-            icon: const Icon(Icons.grid_view), // Or another suitable icon
-            onPressed: () {
-              context.go('/eisenhower'); // Navigate using go_router
-            },
-          ),
-          // Button to navigate to Calendar Screen
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () {
-              context.go('/calendar'); // Navigate using go_router
-            },
-          ),
-        ],
+        actions: _buildAppBarActions(),
       ),
       body: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
