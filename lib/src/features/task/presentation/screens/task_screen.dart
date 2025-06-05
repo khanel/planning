@@ -46,6 +46,13 @@ class _TaskScreenState extends State<TaskScreen> {
               context.go('/eisenhower'); // Navigate using go_router
             },
           ),
+          // Button to navigate to Calendar Screen
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: () {
+              context.go('/calendar'); // Navigate using go_router
+            },
+          ),
         ],
       ),
       body: BlocBuilder<TaskBloc, TaskState>(
