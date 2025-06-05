@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:planning/src/features/scheduling/domain/entities/schedule_event.dart';
+import 'package:planning/src/features/calendar/presentation/config/calendar_config.dart';
+import 'package:planning/src/features/calendar/presentation/utils/calendar_event_utils.dart';
+import 'package:planning/src/features/calendar/presentation/widgets/calendar_format_toggle.dart';
+import 'package:planning/src/features/calendar/presentation/widgets/event_marker.dart';
+import 'package:planning/src/features/calendar/presentation/widgets/selected_day_events_panel.dart';
 
 class CalendarPage extends StatefulWidget {
   final List<ScheduleEvent> events;
@@ -33,13 +38,15 @@ class _CalendarPageState extends State<CalendarPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildCalendarFormatToggle(),
+            CalendarFormatToggle(
+              currentFormat: _calendarFormat,
+              onToggle: _toggleCalendarFormat,
+            ),
             _buildCalendar(),
-            if (_selectedDay != null)
-              Container(
-                height: 200,
-                child: _buildSelectedDayEvents(),
-              ),
+            SelectedDayEventsPanel(
+              selectedDay: _selectedDay,
+              events: _selectedDayEvents,
+            ),
           ],
         ),
       ),
@@ -53,22 +60,15 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  Widget _buildCalendarFormatToggle() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: ElevatedButton(
-        onPressed: _toggleCalendarFormat,
-        child: const Text('Change Format'),
-      ),
-    );
-  }
 
   Widget _buildCalendar() {
     return SizedBox(
-      height: _calendarFormat == CalendarFormat.month ? 350 : 340,
+      height: _calendarFormat == CalendarFormat.month 
+        ? CalendarConfig.monthViewHeight 
+        : CalendarConfig.twoWeeksViewHeight,
       child: TableCalendar<ScheduleEvent>(
-        firstDay: DateTime.utc(2020, 1, 1),
-        lastDay: DateTime.utc(2030, 12, 31),
+        firstDay: CalendarConfig.firstDay,
+        lastDay: CalendarConfig.lastDay,
         focusedDay: _focusedDay,
         selectedDayPredicate: _isSelectedDay,
         calendarFormat: _calendarFormat,
@@ -76,34 +76,21 @@ class _CalendarPageState extends State<CalendarPage> {
         onFormatChanged: _onFormatChanged,
         onPageChanged: _onPageChanged,
         startingDayOfWeek: StartingDayOfWeek.monday,
-        calendarStyle: _buildCalendarStyle(),
-        headerStyle: _buildHeaderStyle(),
+        calendarStyle: CalendarConfig.calendarStyle,
+        headerStyle: CalendarConfig.headerStyle,
         eventLoader: _getEventsForDay,
         calendarBuilders: CalendarBuilders<ScheduleEvent>(
           markerBuilder: _buildEventMarker,
         ),
         availableGestures: AvailableGestures.all,
         sixWeekMonthsEnforced: false,
-        daysOfWeekHeight: 30,
-        rowHeight: 40,
+        daysOfWeekHeight: CalendarConfig.daysOfWeekHeight,
+        rowHeight: CalendarConfig.rowHeight,
       ),
     );
   }
 
-  CalendarStyle _buildCalendarStyle() {
-    return const CalendarStyle(
-      outsideDaysVisible: false,
-      weekendTextStyle: TextStyle(color: Colors.red),
-      holidayTextStyle: TextStyle(color: Colors.red),
-    );
-  }
 
-  HeaderStyle _buildHeaderStyle() {
-    return const HeaderStyle(
-      formatButtonVisible: false,
-      titleCentered: true,
-    );
-  }
 
   bool _isSelectedDay(DateTime day) {
     return isSameDay(_selectedDay, day);
@@ -113,7 +100,7 @@ class _CalendarPageState extends State<CalendarPage> {
     setState(() {
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
-      _selectedDayEvents = _getEventsForDay(selectedDay);
+      _selectedDayEvents = CalendarEventUtils.getEventsForDay(selectedDay, widget.events);
     });
   }
 
@@ -138,81 +125,12 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   List<ScheduleEvent> _getEventsForDay(DateTime day) {
-    return widget.events.where((event) {
-      if (event.isAllDay) {
-        return isSameDay(event.startTime, day);
-      } else {
-        return event.startTime.year == day.year &&
-               event.startTime.month == day.month &&
-               event.startTime.day == day.day;
-      }
-    }).toList();
+    return CalendarEventUtils.getEventsForDay(day, widget.events);
   }
 
   Widget? _buildEventMarker(BuildContext context, DateTime day, List<ScheduleEvent> events) {
     if (events.isEmpty) return null;
-    
-    return Container(
-      margin: const EdgeInsets.only(top: 5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-          ),
-          if (events.length > 1)
-            Text(
-              ' ${events.length}',
-              style: const TextStyle(fontSize: 10),
-            ),
-        ],
-      ),
-    );
+    return EventMarker(day: day, events: events);
   }
 
-  Widget _buildSelectedDayEvents() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Events for selected day',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _selectedDayEvents.isEmpty
-                ? const Center(child: Text('No events for this day'))
-                : ListView.builder(
-                    itemCount: _selectedDayEvents.length,
-                    itemBuilder: (context, index) {
-                      final event = _selectedDayEvents[index];
-                      return ListTile(
-                        title: Text(event.title),
-                        subtitle: Text(_formatEventTime(event)),
-                        dense: true,
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatEventTime(ScheduleEvent event) {
-    if (event.isAllDay) {
-      return 'All Day';
-    } else {
-      final startTime = '${event.startTime.hour.toString().padLeft(2, '0')}:${event.startTime.minute.toString().padLeft(2, '0')}';
-      final endTime = '${event.endTime.hour.toString().padLeft(2, '0')}:${event.endTime.minute.toString().padLeft(2, '0')}';
-      return '$startTime - $endTime';
-    }
-  }
 }
