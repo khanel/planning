@@ -8,11 +8,12 @@ import 'package:planning/src/features/scheduling/domain/entities/schedule_event.
 /// Supports multi-day events and day-specific filtering.
 /// Provides tap interaction when onTap callback is provided.
 class EventMarker extends StatelessWidget {
-  // Styling constants
+  // Visual design constants
   static const double _markerSize = 6.0;
   static const double _countFontSize = 10.0;
   static const EdgeInsets _topPadding = EdgeInsets.only(top: 5.0);
   static const int _maxDisplayCount = 9;
+  static const String _countOverflowSuffix = '+';
   
   final DateTime day;
   final List<ScheduleEvent> events;
@@ -32,55 +33,79 @@ class EventMarker extends StatelessWidget {
   List<ScheduleEvent> _getEventsForDay() {
     if (events.isEmpty) return events;
     
-    final targetDate = _normalizeDate(day);
+    final targetDate = _normalizeToDate(day);
     
     return events.where((event) {
-      final startDate = _normalizeDate(event.startTime);
-      final endDate = _normalizeDate(event.endTime);
+      final startDate = _normalizeToDate(event.startTime);
+      final endDate = _normalizeToDate(event.endTime);
       
-      return _isDateInRange(targetDate, startDate, endDate);
+      return _isDateWithinRange(targetDate, startDate, endDate);
     }).toList();
   }
 
   /// Normalizes a DateTime to date-only comparison (removes time component).
-  DateTime _normalizeDate(DateTime dateTime) {
-    return DateTime(dateTime.year, dateTime.month, dateTime.day);
-  }
+  DateTime _normalizeToDate(DateTime dateTime) => DateTime(
+        dateTime.year,
+        dateTime.month,
+        dateTime.day,
+      );
 
   /// Checks if a target date falls within a date range (inclusive).
-  bool _isDateInRange(DateTime target, DateTime start, DateTime end) {
-    return target.isAtSameMomentAs(start) ||
-           target.isAtSameMomentAs(end) ||
-           (target.isAfter(start) && target.isBefore(end));
-  }
+  bool _isDateWithinRange(DateTime target, DateTime start, DateTime end) =>
+      target.isAtSameMomentAs(start) ||
+      target.isAtSameMomentAs(end) ||
+      (target.isAfter(start) && target.isBefore(end));
 
   /// Generates the count text for the badge.
   /// 
   /// Returns the actual count for 2-9 events, or "9+" for 10 or more events.
   String _getCountText(int count) {
-    return count > _maxDisplayCount ? '${_maxDisplayCount}+' : count.toString();
+    return count > _maxDisplayCount 
+        ? '$_maxDisplayCount$_countOverflowSuffix' 
+        : count.toString();
   }
 
   /// Builds the circular marker with theme-aware styling.
-  Widget _buildMarker(BuildContext context) {
-    return Container(
-      width: _markerSize,
-      height: _markerSize,
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        shape: BoxShape.circle,
-      ),
+  Widget _buildMarker(BuildContext context) => Container(
+        width: _markerSize,
+        height: _markerSize,
+        decoration: BoxDecoration(
+          color: Theme.of(context).primaryColor,
+          shape: BoxShape.circle,
+        ),
+      );
+
+  /// Builds the count badge text widget.
+  Widget _buildCountBadge(BuildContext context, int count) => Text(
+        _getCountText(count),
+        style: TextStyle(
+          fontSize: _countFontSize,
+          color: Theme.of(context).textTheme.bodySmall?.color,
+        ),
+      );
+
+  /// Builds the main marker content (marker circle and optional count badge).
+  Widget _buildMarkerContent(BuildContext context, List<ScheduleEvent> dayEvents) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildMarker(context),
+        if (dayEvents.length > 1) _buildCountBadge(context, dayEvents.length),
+      ],
     );
   }
 
-  /// Builds the count badge text widget.
-  Widget _buildCountBadge(BuildContext context, int count) {
-    return Text(
-      _getCountText(count),
-      style: TextStyle(
-        fontSize: _countFontSize,
-        color: Theme.of(context).textTheme.bodySmall?.color,
-      ),
+  /// Builds the interactive wrapper when onTap is provided.
+  Widget _buildInteractiveWrapper({
+    required Widget child,
+    required List<ScheduleEvent> dayEvents,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap!(day, dayEvents);
+      },
+      child: child,
     );
   }
 
@@ -92,31 +117,20 @@ class EventMarker extends StatelessWidget {
       return const SizedBox.shrink();
     }
     
-    final content = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildMarker(context),
-        if (dayEvents.length > 1)
-          _buildCountBadge(context, dayEvents.length),
-      ],
-    );
-
-    if (onTap == null) {
-      return Padding(
-        padding: _topPadding,
-        child: content,
-      );
-    }
-
-    return Padding(
+    final markerContent = _buildMarkerContent(context, dayEvents);
+    final paddedContent = Padding(
       padding: _topPadding,
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap!(day, dayEvents);
-        },
-        child: content,
-      ),
+      child: markerContent,
     );
+
+    return onTap == null
+        ? paddedContent
+        : Padding(
+            padding: _topPadding,
+            child: _buildInteractiveWrapper(
+              child: markerContent,
+              dayEvents: dayEvents,
+            ),
+          );
   }
 }
