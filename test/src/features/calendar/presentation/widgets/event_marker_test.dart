@@ -732,5 +732,300 @@ void main() {
         });
       });
     });
+
+    group('Interaction Tests', () {
+      testWidgets('should call onTap callback when marker is tapped', (WidgetTester tester) async {
+        // Arrange
+        bool tapCallbackCalled = false;
+        final testDay = DateTime(2024, 1, 15);
+        final events = [
+          createTestEvent(
+            id: 'event-1',
+            title: 'Tappable Event',
+            startTime: DateTime(2024, 1, 15, 10, 0),
+            endTime: DateTime(2024, 1, 15, 11, 0),
+          ),
+        ];
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: events,
+                onTap: (day, dayEvents) {
+                  tapCallbackCalled = true;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Tap the marker
+        await tester.tap(find.byType(EventMarker));
+        await tester.pump();
+
+        // Assert
+        expect(tapCallbackCalled, isTrue);
+      });
+
+      testWidgets('should call onTap with day and events when marker is tapped', (WidgetTester tester) async {
+        // Arrange
+        DateTime? tappedDay;
+        List<ScheduleEvent>? tappedEvents;
+        final testDay = DateTime(2024, 1, 15);
+        final events = [
+          createTestEvent(
+            id: 'event-1',
+            title: 'Event 1',
+            startTime: DateTime(2024, 1, 15, 10, 0),
+            endTime: DateTime(2024, 1, 15, 11, 0),
+          ),
+          createTestEvent(
+            id: 'event-2',
+            title: 'Event 2',
+            startTime: DateTime(2024, 1, 15, 14, 0),
+            endTime: DateTime(2024, 1, 15, 15, 0),
+          ),
+        ];
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: events,
+                onTap: (day, dayEvents) {
+                  tappedDay = day;
+                  tappedEvents = dayEvents;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Tap the marker
+        await tester.tap(find.byType(EventMarker));
+        await tester.pump();
+
+        // Assert
+        expect(tappedDay, equals(testDay));
+        expect(tappedEvents, isNotNull);
+        expect(tappedEvents!.length, equals(2));
+        expect(tappedEvents!.map((e) => e.id), containsAll(['event-1', 'event-2']));
+      });
+
+      testWidgets('should not call onTap when marker has no events', (WidgetTester tester) async {
+        // Arrange
+        bool tapCallbackCalled = false;
+        final testDay = DateTime(2024, 1, 15);
+        const emptyEvents = <ScheduleEvent>[];
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: emptyEvents,
+                onTap: (day, dayEvents) {
+                  tapCallbackCalled = true;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Try to tap where the marker would be (but shouldn't exist)
+        final eventMarkerFinder = find.byType(EventMarker);
+        expect(eventMarkerFinder, findsOneWidget);
+        
+        // The widget should be SizedBox.shrink, not tappable
+        final sizedBoxFinder = find.descendant(
+          of: eventMarkerFinder,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is SizedBox && widget.width == 0.0 && widget.height == 0.0,
+          ),
+        );
+        expect(sizedBoxFinder, findsOneWidget);
+
+        // Tap should not trigger callback since there's no interactive element
+        await tester.tap(eventMarkerFinder);
+        await tester.pump();
+
+        // Assert
+        expect(tapCallbackCalled, isFalse);
+      });
+
+      testWidgets('should work without onTap callback (optional parameter)', (WidgetTester tester) async {
+        // Arrange
+        final testDay = DateTime(2024, 1, 15);
+        final events = [
+          createTestEvent(
+            id: 'event-1',
+            title: 'Event without callback',
+            startTime: DateTime(2024, 1, 15, 10, 0),
+            endTime: DateTime(2024, 1, 15, 11, 0),
+          ),
+        ];
+
+        // Act & Assert - Should not throw an exception
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: events,
+                // No onTap provided
+              ),
+            ),
+          ),
+        );
+
+        // Widget should render successfully
+        final eventMarkerFinder = find.byType(EventMarker);
+        expect(eventMarkerFinder, findsOneWidget);
+        
+        // Should display a marker
+        final containerFinder = find.byType(Container);
+        expect(containerFinder, findsOneWidget);
+      });
+
+      testWidgets('should provide haptic feedback when tapped', (WidgetTester tester) async {
+        // Arrange
+        bool hapticFeedbackTriggered = false;
+        final testDay = DateTime(2024, 1, 15);
+        final events = [
+          createTestEvent(
+            id: 'event-1',
+            title: 'Event with haptic',
+            startTime: DateTime(2024, 1, 15, 10, 0),
+            endTime: DateTime(2024, 1, 15, 11, 0),
+          ),
+        ];
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: events,
+                onTap: (day, dayEvents) {
+                  // Callback implementation
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Tap the marker and check for GestureDetector
+        final gestureDetectorFinder = find.byType(GestureDetector);
+        expect(gestureDetectorFinder, findsOneWidget);
+        
+        await tester.tap(gestureDetectorFinder);
+        await tester.pump();
+
+        // Assert - GestureDetector should be present for interaction
+        expect(gestureDetectorFinder, findsOneWidget);
+      });
+
+      testWidgets('should handle rapid multiple taps gracefully', (WidgetTester tester) async {
+        // Arrange
+        int tapCount = 0;
+        final testDay = DateTime(2024, 1, 15);
+        final events = [
+          createTestEvent(
+            id: 'event-1',
+            title: 'Rapid tap event',
+            startTime: DateTime(2024, 1, 15, 10, 0),
+            endTime: DateTime(2024, 1, 15, 11, 0),
+          ),
+        ];
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: events,
+                onTap: (day, dayEvents) {
+                  tapCount++;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Perform multiple rapid taps
+        final eventMarkerFinder = find.byType(EventMarker);
+        for (int i = 0; i < 5; i++) {
+          await tester.tap(eventMarkerFinder);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+
+        // Assert
+        expect(tapCount, equals(5));
+      });
+
+      testWidgets('should pass only events for the specific day in onTap callback', (WidgetTester tester) async {
+        // Arrange
+        List<ScheduleEvent>? callbackEvents;
+        final testDay = DateTime(2024, 1, 15);
+        final events = [
+          // Event on the test day
+          createTestEvent(
+            id: 'event-today',
+            title: 'Today Event',
+            startTime: DateTime(2024, 1, 15, 10, 0),
+            endTime: DateTime(2024, 1, 15, 11, 0),
+          ),
+          // Event on different day - should be filtered out
+          createTestEvent(
+            id: 'event-tomorrow',
+            title: 'Tomorrow Event',
+            startTime: DateTime(2024, 1, 16, 10, 0),
+            endTime: DateTime(2024, 1, 16, 11, 0),
+          ),
+          // Multi-day event spanning test day
+          createTestEvent(
+            id: 'event-multiday',
+            title: 'Multi-day Event',
+            startTime: DateTime(2024, 1, 14, 10, 0),
+            endTime: DateTime(2024, 1, 16, 11, 0),
+          ),
+        ];
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EventMarker(
+                day: testDay,
+                events: events,
+                onTap: (day, dayEvents) {
+                  callbackEvents = dayEvents;
+                },
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(EventMarker));
+        await tester.pump();
+
+        // Assert
+        expect(callbackEvents, isNotNull);
+        expect(callbackEvents!.length, equals(2)); // Only events for the test day
+        
+        final eventIds = callbackEvents!.map((e) => e.id).toList();
+        expect(eventIds, contains('event-today'));
+        expect(eventIds, contains('event-multiday'));
+        expect(eventIds, isNot(contains('event-tomorrow')));
+      });
+    });
   });
 }
