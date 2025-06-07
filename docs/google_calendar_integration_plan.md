@@ -34,6 +34,14 @@ This document provides a comprehensive implementation plan for integrating Googl
   - **COMPLETED**: Full and incremental calendar synchronization ✅
   - **COMPLETED**: Extracted constants and helper methods ✅
   - **COMPLETED**: Centralized error handling with specific failure mapping ✅
+  - **✅ JUNE 7, 2025 - SERVICES RESTRUCTURING COMPLETED**:
+    - **Core Services**: `calendar_integration_service`, `session_aware_calendar_service`
+    - **Infrastructure Services**: `calendar_retry_service`, `circuit_breaker`, `delay_calculator`, `failure_classifier`, `retry_config`
+    - **Sync Services**: `calendar_sync_service`, `calendar_background_sync`, `calendar_offline_sync_service`
+    - **Barrel Exports**: Created export files for each subdirectory (`core.dart`, `infrastructure.dart`, `sync.dart`, `services.dart`)
+    - **Import Updates**: All import statements updated across source and test files
+    - **Dependency Injection**: Updated to use new structured import paths
+    - **Test Verification**: All retry service tests passing (12/12) ✅
 - **Core Layer**:
   - `GoogleAuthService` basic structure ✅
   - `Failure` and `Exception` classes ✅
@@ -82,8 +90,21 @@ This document provides a comprehensive implementation plan for integrating Googl
   - **COMPLETED**: Network connectivity constraints for background tasks ✅
   - **COMPLETED**: Task cancellation and management capabilities ✅
   - **COMPLETED**: Dependency injection setup for background sync services ✅
+- **Services Architecture**:
+  - **✅ COMPLETED: Services Directory Restructuring (June 7, 2025)**:
+    - **Organized into logical subdirectories**: core/, infrastructure/, sync/
+    - **Core Services**: Business logic and integration services
+    - **Infrastructure Services**: Retry mechanisms, circuit breakers, reliability patterns
+    - **Sync Services**: Calendar synchronization and background processing
+    - **Barrel Export Files**: Clean import paths with `services.dart`, `core.dart`, `infrastructure.dart`, `sync.dart`
+    - **Updated Import Statements**: All source and test files updated to new structure
+    - **Dependency Injection Updates**: Service registration updated for new paths
+    - **Test Verification**: All retry service tests passing (12/12) after restructuring ✅
+    - **Maintainability Improvements**: Clear separation of concerns and improved code navigation
+    - **Scalability**: Easy addition of new services in appropriate categories
 
 ### 🔄 IN PROGRESS (Next Priority)
+- **Google Calendar UI Integration**: BLoC implementation and user interface components
 - **Enhanced Error Handling**: Advanced retry mechanisms and offline-first strategies
 
 ### ❌ PENDING (Future Iterations)
@@ -95,10 +116,10 @@ This document provides a comprehensive implementation plan for integrating Googl
 - **Production**: App Store/Play Store OAuth verification setup
 
 ### 📋 NEXT IMMEDIATE STEPS
-1. **Enhanced Error Handling**: Implement retry mechanisms and offline-first strategies
-2. **Production Deployment**: Set up OAuth client credentials for app stores with completed platform configuration
-3. **Performance Optimization**: Implement advanced caching strategies and sync optimizations
-4. **UI Integration**: Connect background sync service with user interface components
+1. **Google Calendar UI Integration**: Implement BLoC pattern and user interface components for calendar features
+2. **Enhanced Error Handling**: Implement retry mechanisms and offline-first strategies
+3. **Production Deployment**: Set up OAuth client credentials for app stores with completed platform configuration
+4. **Performance Optimization**: Implement advanced caching strategies and sync optimizations
 
 ---
 
@@ -186,6 +207,10 @@ dependencies:
 
 ### 4.1 Service Layer Structure
 
+**✅ COMPLETED: Restructured Services Directory (June 7, 2025)**
+
+The calendar services have been restructured for better maintainability and organization:
+
 ```
 lib/
 ├── src/
@@ -213,12 +238,37 @@ lib/
 │           │       ├── get_events.dart
 │           │       ├── create_event.dart
 │           │       └── sync_calendar.dart
+│           ├── services/                           # ✅ RESTRUCTURED
+│           │   ├── core/                          # Core business logic
+│           │   │   ├── calendar_integration_service.dart
+│           │   │   ├── session_aware_calendar_service.dart
+│           │   │   └── core.dart                  # Barrel export
+│           │   ├── infrastructure/                # Infrastructure concerns
+│           │   │   ├── calendar_retry_service.dart
+│           │   │   ├── circuit_breaker.dart
+│           │   │   ├── delay_calculator.dart
+│           │   │   ├── failure_classifier.dart
+│           │   │   ├── retry_config.dart
+│           │   │   └── infrastructure.dart       # Barrel export
+│           │   ├── sync/                          # Synchronization services
+│           │   │   ├── calendar_sync_service.dart
+│           │   │   ├── calendar_background_sync.dart
+│           │   │   ├── calendar_offline_sync_service.dart
+│           │   │   └── sync.dart                  # Barrel export
+│           │   └── services.dart                  # Top-level barrel export
 │           └── presentation/
 │               ├── bloc/
 │               │   └── calendar_bloc.dart
 │               └── widgets/
 │                   └── calendar_view.dart
 ```
+
+**Restructuring Benefits:**
+- **Logical Organization**: Services grouped by responsibility (core, infrastructure, sync)
+- **Maintainability**: Clear separation of concerns improves code navigation
+- **Scalability**: Easy to add new services in appropriate categories
+- **Import Simplification**: Barrel exports provide clean import paths
+- **Testing**: Improved test organization following the same structure
 
 ### 4.2 Authentication Flow Implementation
 
