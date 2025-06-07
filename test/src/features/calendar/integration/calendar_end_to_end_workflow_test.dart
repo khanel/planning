@@ -5,8 +5,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:planning/src/core/auth/google_auth_service.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
-import 'package:planning/src/features/calendar/services/calendar_integration_service.dart';
-import 'package:planning/src/features/calendar/services/session_aware_calendar_service.dart';
+import 'package:planning/src/features/calendar/services/core/calendar_integration_service.dart';
+import 'package:planning/src/features/calendar/services/core/session_aware_calendar_service.dart';
 import 'package:planning/src/core/errors/failures.dart';
 
 // Mock classes

@@ -6,7 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/core/errors/exceptions.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
-import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_sync_service.dart';
 
 // Mock classes
 class MockGoogleSignIn extends Mock implements GoogleSignIn {}

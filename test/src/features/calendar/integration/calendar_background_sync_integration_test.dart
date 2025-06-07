@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:dartz/dartz.dart';
-import 'package:planning/src/features/calendar/services/calendar_background_sync.dart';
-import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_background_sync.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_sync_service.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
 

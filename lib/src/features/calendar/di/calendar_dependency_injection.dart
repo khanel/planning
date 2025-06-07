@@ -3,10 +3,10 @@ import 'package:planning/src/core/di/injection_container.dart';
 import 'package:planning/src/features/calendar/data/datasources/google_calendar_datasource.dart';
 import 'package:planning/src/features/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:planning/src/features/calendar/domain/repositories/calendar_repository.dart';
-import 'package:planning/src/features/calendar/services/calendar_integration_service.dart';
-import 'package:planning/src/features/calendar/services/session_aware_calendar_service.dart';
-import 'package:planning/src/features/calendar/services/calendar_background_sync.dart';
-import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
+import 'package:planning/src/features/calendar/services/core/calendar_integration_service.dart';
+import 'package:planning/src/features/calendar/services/core/session_aware_calendar_service.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_background_sync.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_sync_service.dart';
 import 'package:planning/src/core/auth/google_auth_service.dart';
 
 /// Dependency injection module for calendar feature

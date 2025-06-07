@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:planning/src/core/auth/google_auth_service.dart';
 import 'package:planning/src/core/errors/failures.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
-import 'package:planning/src/features/calendar/services/calendar_integration_service.dart';
+import 'package:planning/src/features/calendar/services/core/calendar_integration_service.dart';
 
 /// Session-aware calendar service that maintains authentication state
 /// 

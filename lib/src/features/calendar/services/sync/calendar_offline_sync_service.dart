@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_sync_service.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
 import 'package:planning/src/features/calendar/domain/enums/conflict_resolution_strategy.dart';
 import 'package:planning/src/features/scheduling/domain/entities/calendar_sync_status.dart';

@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:dartz/dartz.dart';
 import 'package:planning/src/core/errors/failures.dart';
-import 'package:planning/src/features/calendar/services/calendar_retry_service.dart';
-import 'package:planning/src/features/calendar/services/calendar_sync_service.dart';
-import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart';
+import 'package:planning/src/features/calendar/services/infrastructure/calendar_retry_service.dart';
+import 'package:planning/src/features/calendar/services/sync/calendar_sync_service.dart';
+import 'package:planning/src/features/calendar/services/infrastructure/retry_config.dart';
 
 class MockCalendarSyncService extends Mock implements CalendarSyncService {}
 
@@ -195,9 +195,11 @@ void main() {
         // Arrange
         final customRetryService = CalendarRetryService(
           syncService: mockSyncService,
-          maxRetries: 5,
-          baseDelayMs: 500,
-          maxDelayMs: 10000,
+          config: const RetryConfig(
+            maxRetries: 5,
+            baseDelayMs: 500,
+            maxDelayMs: 10000,
+          ),
         );
         
         when(() => mockSyncService.performFullSync()).thenAnswer(
