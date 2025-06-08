@@ -9,16 +9,36 @@ import 'package:planning/src/core/errors/failures.dart';
 part 'calendar_event.dart';
 part 'calendar_state.dart';
 
+/// BLoC that manages calendar events state and business logic.
+/// 
+/// Handles loading events from Google Calendar API through the repository pattern,
+/// mapping domain entities to presentation models, and managing error states.
 class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
+  /// Repository for calendar data operations
   final CalendarRepository repository;
+
+  /// Default date range for fetching calendar events (6 months)
+  static const int _defaultDateRangeMonths = 6;
+  
+  /// Default maximum number of events to fetch
+  static const int _defaultMaxResults = 100;
+  
+  /// Default calendar ID for primary calendar
+  static const String _primaryCalendarId = 'primary';
 
   CalendarBloc({required this.repository}) : super(CalendarInitial()) {
     on<LoadCalendarEvents>(_onLoadCalendarEvents);
   }
 
-  // Handles the LoadCalendarEvents event.
-  // Now uses repository to fetch real calendar data from Google Calendar API
-  // Maps domain entities to presentation models and handles failures
+  /// Handles the [LoadCalendarEvents] event.
+  /// 
+  /// Fetches calendar events from the repository and emits appropriate states.
+  /// Maps domain entities to presentation models and handles various failure scenarios.
+  /// 
+  /// Emits:
+  /// - [CalendarLoading] while fetching data
+  /// - [CalendarLoaded] with events on success
+  /// - [CalendarError] with user-friendly message on failure
   Future<void> _onLoadCalendarEvents(
     LoadCalendarEvents event,
     Emitter<CalendarState> emit,
@@ -26,43 +46,55 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     emit(CalendarLoading());
     
     try {
-      // Check if we should simulate error for backward compatibility
+      // Maintain backward compatibility with simulateError flag
       if (event.simulateError) {
         throw Exception('Failed to load events (simulated)');
       }
 
-      // Call repository to get events with default parameters
-      final timeMin = DateTime.now().subtract(const Duration(days: 180));
-      final timeMax = DateTime.now().add(const Duration(days: 180));
+      // Calculate date range for event fetching
+      final now = DateTime.now();
+      final timeMin = now.subtract(Duration(days: _defaultDateRangeMonths * 30));
+      final timeMax = now.add(Duration(days: _defaultDateRangeMonths * 30));
       
+      // Fetch events from repository
       final result = await repository.getEvents(
         timeMin: timeMin,
         timeMax: timeMax,
-        calendarId: 'primary',
-        maxResults: 100,
+        calendarId: _primaryCalendarId,
+        maxResults: _defaultMaxResults,
       );
       
+      // Handle result and emit appropriate state
       result.fold(
-        (failure) {
-          // Map failures to user-friendly error messages
-          final errorMessage = _mapFailureToMessage(failure);
-          emit(CalendarError(message: errorMessage));
-        },
-        (domainEvents) {
-          // Convert domain entities to presentation models
-          final events = domainEvents.map((domainEvent) => CalendarEventModel(
-            id: domainEvent.id,
-            summary: domainEvent.title,
-          )).toList();
-          emit(CalendarLoaded(events: events));
-        },
+        (failure) => emit(CalendarError(message: _mapFailureToMessage(failure))),
+        (domainEvents) => emit(CalendarLoaded(events: _mapDomainEventsToModels(domainEvents))),
       );
-    } catch (e) {
+    } catch (error) {
       // Handle any unexpected exceptions
-      emit(CalendarError(message: e.toString()));
+      // Maintain backward compatibility with exact error message format
+      final errorMessage = error.toString();
+      emit(CalendarError(message: errorMessage));
     }
   }
 
+  /// Maps domain [CalendarEvent] entities to presentation [CalendarEventModel] models.
+  /// 
+  /// This ensures proper separation between domain and presentation layers.
+  List<CalendarEventModel> _mapDomainEventsToModels(List<domain.CalendarEvent> domainEvents) {
+    return domainEvents.map((domainEvent) => CalendarEventModel(
+      id: domainEvent.id,
+      summary: domainEvent.title,
+      // TODO: Extend CalendarEventModel to include more fields as needed
+      // startTime: domainEvent.startTime,
+      // endTime: domainEvent.endTime,
+      // description: domainEvent.description,
+    )).toList();
+  }
+
+  /// Maps [Failure] objects to user-friendly error messages.
+  /// 
+  /// This provides consistent error messaging throughout the application
+  /// and helps maintain a good user experience.
   String _mapFailureToMessage(Failure failure) {
     switch (failure.runtimeType) {
       case NetworkFailure:
