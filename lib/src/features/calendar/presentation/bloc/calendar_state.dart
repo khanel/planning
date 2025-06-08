@@ -12,7 +12,7 @@ class CalendarInitial extends CalendarState {}
 class CalendarLoading extends CalendarState {}
 
 class CalendarLoaded extends CalendarState {
-  final List<dynamic> events; // Replace dynamic with your CalendarEvent model
+  final List<CalendarEventModel> events;
 
   const CalendarLoaded({required this.events});
 

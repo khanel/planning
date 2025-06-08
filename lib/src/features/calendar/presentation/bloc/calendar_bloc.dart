@@ -1,5 +1,6 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:planning/src/features/calendar/domain/entities/calendar_event_model.dart';
 
 part 'calendar_event.dart';
 part 'calendar_state.dart';
@@ -9,14 +10,19 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     on<LoadCalendarEvents>(_onLoadCalendarEvents);
   }
 
-  Future<void> _onLoadCalendarEvents(
+  void _onLoadCalendarEvents(
     LoadCalendarEvents event,
     Emitter<CalendarState> emit,
-  ) async {
+  ) {
     emit(CalendarLoading());
-    // Simulate network delay or actual data fetching
-    await Future.delayed(const Duration(seconds: 1));
-    // In a real app, you would fetch events from a repository
-    emit(const CalendarLoaded(events: []));
+    try {
+      if (event.simulateError) {
+        throw Exception('Failed to load events');
+      }
+      final events = <CalendarEventModel>[];
+      emit(CalendarLoaded(events: events));
+    } catch (e) {
+      emit(CalendarError(message: e.toString()));
+    }
   }
 }
