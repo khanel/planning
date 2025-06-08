@@ -19,6 +19,7 @@ This document provides a comprehensive implementation plan for integrating Googl
   - **NEW**: `UpdateEvent` use case with validation ✅
   - **NEW**: `DeleteEvent` use case with validation ✅
   - **NEW**: `CalendarEventValidator` shared validation utility ✅
+  - **NEW**: `CalendarEventModel` (entity for BLoC state) ✅
 - **Data Layer**:
   - `GoogleCalendarDatasource` abstract interface ✅
   - **COMPLETED**: `GoogleCalendarDatasourceImpl` with full CRUD operations ✅
@@ -54,6 +55,17 @@ This document provides a comprehensive implementation plan for integrating Googl
   - **COMPLETED**: Cross-platform OAuth validation and security checks ✅
   - **COMPLETED**: Production-ready configuration with App Check and security features ✅
   - **COMPLETED**: Comprehensive error handling for platform configuration ✅
+- **Presentation Layer (Calendar Feature - BLoC)**:
+  - **✅ COMPLETED: Calendar BLoC Initial State (June 8, 2025)**
+    - `CalendarBloc`, `CalendarEvent`, `CalendarState` basic structure ✅
+    - `CalendarInitial` state implemented and tested ✅
+    - TDD Cycle 1 (Initial State): RED (`test(calendar): add failing tests for CalendarBloc initial state`) → GREEN (`feat(calendar): implement CalendarBloc initial state and basic structure`) → REFACTOR (`refactor(calendar): review CalendarBloc structure`) ✅
+  - **✅ COMPLETED: Calendar BLoC Load Events (Simulated) (June 8, 2025)**
+    - `LoadCalendarEvents` event implemented ✅
+    - `CalendarLoading`, `CalendarLoaded`, `CalendarError` states implemented ✅
+    - `CalendarBloc` handles `LoadCalendarEvents` (synchronously, with `simulateError` flag for testing) ✅
+    - `CalendarEventModel` created for `CalendarLoaded` state ✅
+    - TDD Cycle 2 (Load Events - Simulated): RED (`test(calendar): add failing tests for loading calendar events`) → GREEN (`feat(calendar): implement LoadCalendarEvents handling in CalendarBloc`) → REFACTOR (`refactor(calendar): add comments to CalendarBloc event handler`) ✅
 - **Test Infrastructure**:
   - All calendar feature tests passing (48/48) ✅
   - **TDD Cycles Complete**: 
@@ -65,6 +77,8 @@ This document provides a comprehensive implementation plan for integrating Googl
     - ✅ **NEW**: PlatformOAuthConfig platform-specific OAuth TDD cycle (RED→GREEN→REFACTOR)
     - ✅ **NEW**: CalendarLocalDataSource persistent storage TDD cycle (RED→GREEN→REFACTOR)
     - ✅ **NEW**: CalendarBackgroundSync WorkManager integration TDD cycle (RED→GREEN→REFACTOR)
+    - ✅ **NEW**: CalendarBloc Initial State TDD Cycle (RED→GREEN→REFACTOR)
+    - ✅ **NEW**: CalendarBloc Load Events (Simulated) TDD Cycle (RED→GREEN→REFACTOR)
   - Comprehensive test coverage for all CRUD operations ✅
   - Proper mocktail setup with fallback values ✅
   - **NEW**: Offline sync capabilities with local caching and conflict resolution ✅
@@ -104,7 +118,10 @@ This document provides a comprehensive implementation plan for integrating Googl
     - **Scalability**: Easy addition of new services in appropriate categories
 
 ### 🔄 IN PROGRESS (Next Priority)
-- **Google Calendar UI Integration**: BLoC implementation and user interface components
+- **Google Calendar UI Integration**: 
+  - BLoC implementation for initial state and simulated event loading **✅ COMPLETED**
+  - BLoC integration with real Google Calendar API data **🔄 IN PROGRESS**
+  - User interface components for calendar display **PENDING**
 - **Enhanced Error Handling**: Advanced retry mechanisms and offline-first strategies
 
 ### ❌ PENDING (Future Iterations)
@@ -116,10 +133,12 @@ This document provides a comprehensive implementation plan for integrating Googl
 - **Production**: App Store/Play Store OAuth verification setup
 
 ### 📋 NEXT IMMEDIATE STEPS
-1. **Google Calendar UI Integration**: Implement BLoC pattern and user interface components for calendar features
+1. **Google Calendar UI Integration**: 
+    - Integrate real Google Calendar API data into the `CalendarBloc`.
+    - Implement user interface components for calendar features.
 2. **Enhanced Error Handling**: Implement retry mechanisms and offline-first strategies
-3. **Production Deployment**: Set up OAuth client credentials for app stores with completed platform configuration
-4. **Performance Optimization**: Implement advanced caching strategies and sync optimizations
+3.  **Production Deployment**: Set up OAuth client credentials for app stores with completed platform configuration.
+4.  **Performance Optimization**: Implement advanced caching strategies and sync optimizations.
 
 ---
 
@@ -776,12 +795,12 @@ class CalendarBackgroundSync {
 **Implementation Highlights:**
 - ✅ **WorkManager Integration**: Periodic and one-time task scheduling with network constraints
 - ✅ **Authentication Flow**: Automatic authentication handling in background context
-- ✅ **Error Resilience**: Comprehensive exception handling with structured logging
-- ✅ **Platform Support**: Graceful handling of platform channel exceptions in test environments
-- ✅ **Task Management**: Registration, execution, and cancellation of background sync tasks
-- ✅ **Logging Integration**: Structured logging using the `logging` package for debugging and monitoring
-- ✅ **Network Awareness**: Background tasks only execute when network connectivity is available
-- ✅ **Battery Optimization**: Tasks respect battery-low constraints to preserve device performance
+- ✅ **Error Resilience**: Comprehensive exception handling with structured logging using the `logging` package
+- ✅ **Platform Compatibility**: Graceful handling of platform channel exceptions in test environments
+- ✅ **Network Optimization**: Background tasks only execute when network connectivity is available
+- ✅ **Battery Awareness**: Respects device battery constraints to optimize performance
+- ✅ **Task Management**: Complete lifecycle management (registration, execution, cancellation)
+- ✅ **Logging Integration**: Structured logging for debugging, monitoring, and production support
 - ✅ **Dependency Injection**: Proper service registration for background sync components
 
 ## 8. Error Handling & Resilience
@@ -1031,7 +1050,6 @@ class CalendarEventDataModel {
 - ✅ **All Tests Passing**: 413 comprehensive tests covering all scenarios
 
 **Legacy Implementation (Replaced):**
-```
 
 ## 9. Privacy & Compliance
 
