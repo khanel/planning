@@ -1,33 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:planning/src/features/calendar/presentation/pages/calendar_page.dart';
-import 'package:planning/src/features/scheduling/domain/entities/schedule_event.dart';
+import 'package:planning/src/features/calendar/presentation/bloc/calendar_bloc.dart';
+import 'package:planning/src/features/calendar/domain/entities/calendar_event_model.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+class MockCalendarBloc extends Mock implements CalendarBloc {}
+
 void main() {
-  group('CalendarPage - RED PHASE - Failing Tests for Basic Calendar UI', () {
+  late MockCalendarBloc mockBloc;
+
+  setUp(() {
+    mockBloc = MockCalendarBloc();
+    when(() => mockBloc.state).thenReturn(CalendarInitial());
+    when(() => mockBloc.stream).thenAnswer((_) => const Stream<CalendarState>.empty());
+  });
+
+  group('CalendarPage Basic UI Tests', () {
     testWidgets('should display TableCalendar widget when page loads', (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         MaterialApp(
-          home: const CalendarPage(),
+          home: BlocProvider<CalendarBloc>.value(
+            value: mockBloc,
+            child: const CalendarPage(),
+          ),
         ),
       );
 
-      // Assert - This should FAIL initially as CalendarPage doesn't exist
-      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
+      // Assert
+      expect(find.byType(TableCalendar<CalendarEventModel>), findsOneWidget);
     });
 
     testWidgets('should display app bar with Calendar title', (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         MaterialApp(
-          home: const CalendarPage(),
+          home: BlocProvider<CalendarBloc>.value(
+            value: mockBloc,
+            child: const CalendarPage(),
+          ),
         ),
       );
 
-      // Assert - This should FAIL initially as CalendarPage doesn't exist
+      // Assert
       expect(find.byType(AppBar), findsOneWidget);
       expect(find.text('Calendar'), findsOneWidget);
     });
@@ -39,12 +58,15 @@ void main() {
       // Act
       await tester.pumpWidget(
         MaterialApp(
-          home: const CalendarPage(),
+          home: BlocProvider<CalendarBloc>.value(
+            value: mockBloc,
+            child: const CalendarPage(),
+          ),
         ),
       );
 
-      // Assert - This should FAIL initially as CalendarPage doesn't exist
-      final tableCalendar = tester.widget<TableCalendar<ScheduleEvent>>(find.byType(TableCalendar<ScheduleEvent>));
+      // Assert
+      final tableCalendar = tester.widget<TableCalendar<CalendarEventModel>>(find.byType(TableCalendar<CalendarEventModel>));
       expect(tableCalendar.focusedDay.month, now.month);
       expect(tableCalendar.focusedDay.year, now.year);
     });
@@ -61,7 +83,10 @@ void main() {
           ),
           GoRoute(
             path: '/calendar',
-            builder: (context, state) => const CalendarPage(),
+            builder: (context, state) => BlocProvider<CalendarBloc>.value(
+              value: mockBloc,
+              child: const CalendarPage(),
+            ),
           ),
         ],
       );
@@ -77,16 +102,19 @@ void main() {
       router.push('/calendar');
       await tester.pumpAndSettle();
 
-      // Assert - This should FAIL initially as CalendarPage doesn't exist and route isn't configured
+      // Assert
       expect(find.byType(CalendarPage), findsOneWidget);
-      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
+      expect(find.byType(TableCalendar<CalendarEventModel>), findsOneWidget);
     });
 
     testWidgets('should allow date selection interaction', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         MaterialApp(
-          home: const CalendarPage(),
+          home: BlocProvider<CalendarBloc>.value(
+            value: mockBloc,
+            child: const CalendarPage(),
+          ),
         ),
       );
 
@@ -95,9 +123,9 @@ void main() {
       await tester.tap(dateCell);
       await tester.pump();
 
-      // Assert - This should FAIL initially as CalendarPage doesn't exist
+      // Assert
       // For now, we just verify the page still displays properly after interaction
-      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
+      expect(find.byType(TableCalendar<CalendarEventModel>), findsOneWidget);
       expect(find.byType(AppBar), findsOneWidget);
     });
 
@@ -105,7 +133,10 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         MaterialApp(
-          home: const CalendarPage(),
+          home: BlocProvider<CalendarBloc>.value(
+            value: mockBloc,
+            child: const CalendarPage(),
+          ),
         ),
       );
 
@@ -114,8 +145,8 @@ void main() {
       await tester.tap(formatButton);
       await tester.pump();
 
-      // Assert - This should FAIL initially as CalendarPage doesn't exist
-      expect(find.byType(TableCalendar<ScheduleEvent>), findsOneWidget);
+      // Assert
+      expect(find.byType(TableCalendar<CalendarEventModel>), findsOneWidget);
     });
   });
 }
