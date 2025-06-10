@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:dartz/dartz.dart';
 import 'package:planning/src/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:planning/src/features/calendar/domain/entities/calendar_event.dart' as domain;
+import 'package:planning/src/features/calendar/domain/entities/calendar_event_model.dart';
 import 'package:planning/src/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:planning/src/core/errors/failures.dart';
 
@@ -260,6 +261,98 @@ void main() {
         
         await bloc.close();
       });
+    });
+
+    group('CreateCalendarEvent', () {
+      final tEventToCreate = CalendarEventModel(
+        id: 'temp-id', // Temporary ID for creation
+        summary: 'New Test Event',
+      );
+
+      final tCreatedEvent = domain.CalendarEvent(
+        id: 'created-event-123',
+        title: 'New Test Event',
+        description: 'Test event description',
+        startTime: DateTime.parse('2024-06-10T09:00:00Z'),
+        endTime: DateTime.parse('2024-06-10T10:00:00Z'),
+        isAllDay: false,
+      );
+
+      blocTest<CalendarBloc, CalendarState>(
+        'emits [CalendarCreatingEvent, CalendarEventCreated] when event is created successfully',
+        build: () {
+          when(() => mockRepository.createEvent(
+                event: any(named: 'event'),
+                calendarId: any(named: 'calendarId'),
+              )).thenAnswer((_) async => Right(tCreatedEvent));
+          return CalendarBloc(repository: mockRepository);
+        },
+        act: (bloc) => bloc.add(CreateCalendarEvent(event: tEventToCreate)),
+        expect: () => [
+          isA<CalendarCreatingEvent>(),
+          isA<CalendarEventCreated>().having(
+            (state) => state.createdEvent.id,
+            'created event id',
+            'created-event-123',
+          ).having(
+            (state) => state.createdEvent.summary,
+            'created event summary',
+            'New Test Event',
+          ),
+        ],
+        verify: (bloc) {
+          verify(() => mockRepository.createEvent(
+            event: any(named: 'event'),
+            calendarId: 'primary',
+          )).called(1);
+        },
+      );
+
+      blocTest<CalendarBloc, CalendarState>(
+        'emits [CalendarCreatingEvent, CalendarError] when event creation fails',
+        build: () {
+          when(() => mockRepository.createEvent(
+                event: any(named: 'event'),
+                calendarId: any(named: 'calendarId'),
+              )).thenAnswer((_) async => const Left(ServerFailure()));
+          return CalendarBloc(repository: mockRepository);
+        },
+        act: (bloc) => bloc.add(CreateCalendarEvent(event: tEventToCreate)),
+        expect: () => [
+          isA<CalendarCreatingEvent>(),
+          isA<CalendarError>().having(
+            (state) => state.message,
+            'error message',
+            'Server error. Please try again later.',
+          ),
+        ],
+        verify: (bloc) {
+          verify(() => mockRepository.createEvent(
+            event: any(named: 'event'),
+            calendarId: 'primary',
+          )).called(1);
+        },
+      );
+
+      blocTest<CalendarBloc, CalendarState>(
+        'emits [CalendarCreatingEvent, CalendarError] when repository throws exception',
+        build: () {
+          when(() => mockRepository.createEvent(
+                event: any(named: 'event'),
+                calendarId: any(named: 'calendarId'),
+              )).thenThrow(Exception('Creation failed'));
+          return CalendarBloc(repository: mockRepository);
+        },
+        act: (bloc) => bloc.add(CreateCalendarEvent(event: tEventToCreate)),
+        expect: () => [
+          isA<CalendarCreatingEvent>(),
+          isA<CalendarError>().having(
+            (state) => state.message,
+            'error message',
+            contains('Exception: Creation failed'),
+          ),
+        ],
+      );
     });
   });
 }
