@@ -28,6 +28,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
 
   CalendarBloc({required this.repository}) : super(CalendarInitial()) {
     on<LoadCalendarEvents>(_onLoadCalendarEvents);
+    on<CreateCalendarEvent>(_onCreateCalendarEvent);
   }
 
   /// Handles the [LoadCalendarEvents] event.
@@ -74,6 +75,53 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       // Maintain backward compatibility with exact error message format
       final errorMessage = error.toString();
       emit(CalendarError(message: errorMessage));
+    }
+  }
+
+  /// Handles the [CreateCalendarEvent] event.
+  /// 
+  /// Creates a new calendar event in the repository and emits appropriate states.
+  /// 
+  /// Emits:
+  /// - [CalendarCreatingEvent] while creating the event
+  /// - [CalendarEventCreated] with created event on success
+  /// - [CalendarError] with user-friendly message on failure
+  Future<void> _onCreateCalendarEvent(
+    CreateCalendarEvent event,
+    Emitter<CalendarState> emit,
+  ) async {
+    emit(CalendarCreatingEvent());
+    
+    try {
+      // Convert presentation model to domain entity with minimal required fields
+      final now = DateTime.now();
+      final domainEvent = domain.CalendarEvent(
+        id: event.event.id,
+        title: event.event.summary,
+        description: '', // Minimal value for GREEN phase
+        startTime: now, // Minimal value for GREEN phase
+        endTime: now.add(Duration(hours: 1)), // Minimal value for GREEN phase
+        isAllDay: false, // Minimal value for GREEN phase
+      );
+      
+      // Create event using repository
+      final result = await repository.createEvent(
+        event: domainEvent,
+        calendarId: _primaryCalendarId,
+      );
+      
+      // Handle result and emit appropriate state
+      result.fold(
+        (failure) => emit(CalendarError(message: _mapFailureToMessage(failure))),
+        (createdEvent) => emit(CalendarEventCreated(
+          createdEvent: CalendarEventModel(
+            id: createdEvent.id,
+            summary: createdEvent.title,
+          ),
+        )),
+      );
+    } catch (error) {
+      emit(CalendarError(message: error.toString()));
     }
   }
 

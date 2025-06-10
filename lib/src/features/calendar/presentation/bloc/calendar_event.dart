@@ -15,3 +15,12 @@ class LoadCalendarEvents extends CalendarEvent {
   @override
   List<Object> get props => [simulateError];
 }
+
+class CreateCalendarEvent extends CalendarEvent {
+  final CalendarEventModel event;
+
+  const CreateCalendarEvent({required this.event});
+
+  @override
+  List<Object> get props => [event];
+}

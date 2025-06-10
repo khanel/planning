@@ -28,3 +28,14 @@ class CalendarError extends CalendarState {
   @override
   List<Object> get props => [message];
 }
+
+class CalendarCreatingEvent extends CalendarState {}
+
+class CalendarEventCreated extends CalendarState {
+  final CalendarEventModel createdEvent;
+
+  const CalendarEventCreated({required this.createdEvent});
+
+  @override
+  List<Object> get props => [createdEvent];
+}
